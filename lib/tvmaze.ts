@@ -1,7 +1,7 @@
 import { shows as fallbackShows } from "@/lib/data";
 
 export type Show = {
-  id: number;
+  id: string;
   title: string;
   genre: string;
   year: string;
@@ -20,9 +20,7 @@ type TVMazeShowData = {
   image: { medium: string; original: string } | null;
 };
 
-type TVMazeResult = {
-  show?: TVMazeShowData;
-} & Partial<TVMazeShowData>;
+type TVMazeResult = TVMazeShowData | { show: TVMazeShowData };
 
 const fallbackPageSize = 8;
 
@@ -44,10 +42,10 @@ export async function getShows(page = 1): Promise<{ shows: Show[]; totalPages: n
 
     return {
       shows: results.map((entry) => {
-        const show = entry.show ?? entry;
+        const show = "show" in entry ? entry.show : entry;
 
         return {
-          id: show.id,
+          id: String(show.id),
           title: show.name,
           genre: show.genres?.join(", ") || "Unknown genre",
           year: show.premiered?.slice(0, 4) || "—",
@@ -65,7 +63,15 @@ export async function getShows(page = 1): Promise<{ shows: Show[]; totalPages: n
     const sliced = fallbackShows.slice(sliceStart, sliceStart + fallbackPageSize);
 
     return {
-      shows: sliced,
+      shows: sliced.map((show) => ({
+        id: String(show.id),
+        title: show.title,
+        genre: show.genre,
+        year: String(show.year),
+        runtime: show.runtime,
+        rating: show.rating,
+        posterImage: show.posterImage,
+      })),
       totalPages: Math.max(1, Math.ceil(fallbackShows.length / fallbackPageSize)),
     };
   }

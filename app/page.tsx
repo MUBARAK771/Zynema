@@ -47,7 +47,7 @@ function CompactCard({ show }: { show: Show }) {
   );
 }
 
-function RowTitle({ icon, title, subtitle }: { icon: React.ReactNode; title: string; subtitle: string }) {
+function TrendingUp({ icon, title, subtitle }: { icon: React.ReactNode; title: string; subtitle: string }) {
   return (
     <div className="mb-4 flex items-end justify-between gap-4">
       <div>
@@ -90,8 +90,8 @@ export default async function Home() {
             </div>
             <p className="mt-4 max-w-lg text-base leading-5 text-zinc-400">Explore a universe of remarkable stories, unforgettable characters, and fresh episodes waiting for your next watch.</p>
             <div className="mt-5 flex flex-wrap gap-2">
-              <Link href={featured ? `/shows/${featured.id}` : "/dashboard"} className="inline-flex items-center text-4xl gap-2 rounded-full bg-[#ff3d00] px-5 py-2.5 text-[11px] font-semibold text-white hover:bg-[#ff551f]"><Play size={12} className="fill-white" /> Watch Now</Link>
-              <Link href={featured ? `/shows/${featured.id}` : "/dashboard"} className="inline-flex items-center text-4xl  gap-2 rounded-full border border-zinc-600 px-4 py-2.5 text-[11px] text-zinc-200 hover:border-white"><Info size={12} /> More Details</Link>
+              <Link href={featured ? `/shows/${featured.id}` : "/dashboard"} className="inline-flex items-center text-4xl gap-2 rounded-full bg-[#ff3d00] px-5 py-2.5 text-[11px] font-semibold text-white hover:bg-[#ff551f]"><Play size={18} className="" /> Watch Now</Link>
+              <Link href={featured ? `/shows/${featured.id}` : "/dashboard"} className="inline-flex items-center text-4xl  gap-2 rounded-full border border-zinc-600 px-4 py-2.5 text-[11px] text-zinc-200 hover:border-white"><Info size={18} /> More Details</Link>
               <button aria-label="Add featured show" className="flex h-8 w-8 items-center justify-center rounded-full border border-zinc-600 text-zinc-200 hover:border-white"><Plus size={14} /></button>
             </div>
           </div>
@@ -106,12 +106,12 @@ export default async function Home() {
         </div>
 
         <section className="py-2">
-          <RowTitle icon={<Flame size={14} className="text-[#ff3d00]" />} title="Trending Now" subtitle="The most watched shows on Zynema this week" />
+          <TrendingUp icon={<Flame size={14} className="text-[#ff3d00]" />} title="Trending Now" subtitle="The most watched shows on Zynema this week" />
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">{trending.map((show) => <CompactCard key={show.id} show={show} />)}</div>
         </section>
 
         <section className="py-8">
-          <RowTitle icon={<Radio size={14} className="text-[#ff3d00]" />} title="Currently Airing" subtitle="Fresh episodes available right now" />
+          <TrendingUp icon={<Radio size={14} className="text-[#ff3d00]" />} title="Currently Airing" subtitle="Fresh episodes available right now" />
           <div className="grid gap-4 md:grid-cols-2">
             {[popular[0], popular[1]].map((show) => show ? (
               <Link key={show.id} href={`/shows/${show.id}`} className="group relative h-32 overflow-hidden rounded-lg border border-[#2b2d31] bg-[#1b1d20]">
@@ -124,7 +124,7 @@ export default async function Home() {
         </section>
 
         <section className="py-2">
-          <RowTitle icon={<Flame size={14} className="text-[#ff3d00]" />} title="Global Popularity" subtitle="Fan favorites across all regions" />
+          <TrendingUp icon={<Flame size={14} className="text-[#ff3d00]" />} title="Global Popularity" subtitle="Fan favorites across all regions" />
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">{popular.map((show) => <CompactCard key={show.id} show={show} />)}</div>
         </section>
 
