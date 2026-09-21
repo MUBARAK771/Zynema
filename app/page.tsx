@@ -2,19 +2,32 @@ import Link from "next/link";
 import {
   ArrowRight,
   CalendarDays,
+  Clapperboard,
   Clock3,
   Flame,
+  Gamepad2,
   Heart,
   Info,
+  MonitorPlay,
   Play,
   Plus,
   Radio,
   Sparkles,
   Star,
+  TrendingUp,
+  Tv,
+  Zap,
 } from "lucide-react";
 import { getShows, type Show } from "@/lib/tvmaze";
 
-const genres = ["Sci-Fi", "Action", "Thriller", "Romance", "Comedy", "Drama"];
+const genres = [
+  { label: "Sci-Fi", icon: Zap },
+  { label: "Action", icon: Flame },
+  { label: "Thriller", icon: Clapperboard },
+  { label: "Romance", icon: Heart },
+  { label: "Comedy", icon: Gamepad2 },
+  { label: "Drama", icon: MonitorPlay },
+];
 
 function CompactCard({ show }: { show: Show }) {
   return (
@@ -47,7 +60,7 @@ function CompactCard({ show }: { show: Show }) {
   );
 }
 
-function TrendingUp({ icon, title, subtitle }: { icon: React.ReactNode; title: string; subtitle: string }) {
+function RowTitle({ icon, title, subtitle }: { icon: React.ReactNode; title: string; subtitle: string }) {
   return (
     <div className="mb-4 flex items-end justify-between gap-4">
       <div>
@@ -68,7 +81,7 @@ export default async function Home() {
   const popular = shows.slice(0, 4);
 
   return (
-    <main className="min-h-full bg-[#0d0e10] pb-10">
+    <main className="min-h-full bg-[#0d0e10] pb-10 text-base">
       <section className="relative min-h-97.5 overflow-hidden border-b border-[#202226]">
         {featured?.posterImage ? (
           <img src={featured.posterImage} alt="" className="absolute inset-0 h-full w-full object-cover opacity-35" />
@@ -89,9 +102,9 @@ export default async function Home() {
               <span className="text-base">12 Episodes</span>
             </div>
             <p className="mt-4 max-w-lg text-base leading-5 text-zinc-400">Explore a universe of remarkable stories, unforgettable characters, and fresh episodes waiting for your next watch.</p>
-            <div className="mt-5 flex flex-wrap gap-2">
-              <Link href={featured ? `/shows/${featured.id}` : "/dashboard"} className="inline-flex items-center text-4xl gap-2 rounded-full bg-[#ff3d00] px-5 py-2.5 text-[11px] font-semibold text-white hover:bg-[#ff551f]"><Play size={18} className="" /> Watch Now</Link>
-              <Link href={featured ? `/shows/${featured.id}` : "/dashboard"} className="inline-flex items-center text-4xl  gap-2 rounded-full border border-zinc-600 px-4 py-2.5 text-[11px] text-zinc-200 hover:border-white"><Info size={18} /> More Details</Link>
+            <div className="mt-5 flex flex-wrap items-center gap-2">
+              <Link href={featured ? `/shows/${featured.id}` : "/dashboard"} className="inline-flex items-center gap-2 rounded-full bg-[#ff3d00] px-5 py-2.5 text-base font-semibold text-white hover:bg-[#ff551f]"><Play size={18} className="" /> Watch Now</Link>
+              <Link href={featured ? `/shows/${featured.id}` : "/dashboard"} className="inline-flex items-center gap-2 rounded-full border border-zinc-600 px-4 py-2.5 text-base text-zinc-200 hover:border-white"><Info size={18} /> More Details</Link>
               <button aria-label="Add featured show" className="flex h-8 w-8 items-center justify-center rounded-full border border-zinc-600 text-zinc-200 hover:border-white"><Plus size={14} /></button>
             </div>
           </div>
@@ -100,31 +113,31 @@ export default async function Home() {
 
       <div className="mx-auto max-w-7xl px-5 lg:px-8">
         <div className="flex gap-2 overflow-x-auto py-6 scrollbar-none">
-          {genres.map((genre, index) => (
-            <button key={genre} className={`flex shrink-0 items-center gap-1.5 rounded-md border px-4 py-2 text-[10px] ${index === 0 ? "border-[#ff3d00] bg-[#ff3d00]/10 text-white" : "border-[#2b2d31] bg-[#1a1c20] text-zinc-300 hover:border-zinc-500"}`}><Sparkles size={10} />{genre}</button>
+          {genres.map(({ label, icon: Icon }, index) => (
+            <button key={label} className={`flex shrink-0 items-center gap-1.5 rounded-md border px-4 py-2 text-[10px] ${index === 0 ? "border-[#ff3d00] bg-[#ff3d00]/10 text-white" : "border-[#2b2d31] bg-[#1a1c20] text-zinc-300 hover:border-zinc-500"}`}><Icon size={12} />{label}</button>
           ))}
         </div>
 
         <section className="py-2">
-          <TrendingUp icon={<Flame size={14} className="text-[#ff3d00]" />} title="Trending Now" subtitle="The most watched shows on Zynema this week" />
+          <RowTitle icon={<TrendingUp size={14} className="text-[#ff3d00]" />} title="Trending Now" subtitle="The most watched shows on Zynema this week" />
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">{trending.map((show) => <CompactCard key={show.id} show={show} />)}</div>
         </section>
 
         <section className="py-8">
-          <TrendingUp icon={<Radio size={14} className="text-[#ff3d00]" />} title="Currently Airing" subtitle="Fresh episodes available right now" />
+          <RowTitle icon={<Tv size={14} className="text-[#ff3d00]" />} title="Currently Airing" subtitle="Fresh episodes available right now" />
           <div className="grid gap-4 md:grid-cols-2">
             {[popular[0], popular[1]].map((show) => show ? (
               <Link key={show.id} href={`/shows/${show.id}`} className="group relative h-32 overflow-hidden rounded-lg border border-[#2b2d31] bg-[#1b1d20]">
                 {show.posterImage ? <img src={show.posterImage} alt={show.title} className="h-full w-full object-cover opacity-70 transition group-hover:scale-105" /> : null}
                 <div className="absolute inset-0 bg-linear-to-r from-black/90 via-black/45 to-transparent" />
-                <div className="absolute inset-0 flex flex-col justify-center p-4"><span className="mb-2 w-fit rounded bg-[#ff3d00] px-1.5 py-1 text-[8px] font-bold">LIVE</span><h3 className="text-sm font-bold">{show.title}</h3><p className="mt-0.5 text-[10px] text-zinc-400">{show.genre} · New Episode</p><span className="mt-3 flex w-fit items-center gap-1 rounded-full bg-white/15 px-3 py-1 text-[9px]"><Play size={9} className="fill-white" /> Watch Live</span></div>
+                <div className="absolute inset-0 flex flex-col justify-center p-4"><span className="mb-2 w-fit rounded bg-[#ff3d00] px-1.5 py-1 text-[8px] font-bold">LIVE</span><h3 className="text-sm font-bold">{show.title}</h3><p className="mt-0.5 text-[10px] text-zinc-400">{show.genre} · New Episode</p><span className="mt-3 flex w-fit items-center gap-1 rounded-full bg-white/15 px-3 py-1 text-[9px]"><Play size={9} className="" /> Watch Live</span></div>
               </Link>
             ) : null)}
           </div>
         </section>
 
         <section className="py-2">
-          <TrendingUp icon={<Flame size={14} className="text-[#ff3d00]" />} title="Global Popularity" subtitle="Fan favorites across all regions" />
+          <RowTitle icon={<Flame size={14} className="text-[#ff3d00]" />} title="Global Popularity" subtitle="Fan favorites across all regions" />
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">{popular.map((show) => <CompactCard key={show.id} show={show} />)}</div>
         </section>
 

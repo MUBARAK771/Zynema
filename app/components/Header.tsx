@@ -53,7 +53,7 @@ export default function Header() {
   }, []);
 
   return (
-    <header className="flex items-center gap-4 border-b border-[#242529] bg-base-bg px-6 py-4">
+    <header className="flex items-center gap-4 border-b border-[#242529] bg-[#0d0e10] px-6 py-4">
       <div ref={containerRef} className="flex-1 max-w-xl relative">
         <Search
           size={16}
