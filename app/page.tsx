@@ -82,7 +82,7 @@ export default async function Home() {
 
   return (
     <main className="min-h-full bg-[#0d0e10] pb-10 text-base">
-      <section className="relative min-h-97.5 overflow-hidden border-b border-[#202226]">
+      {/* <section className="relative min-h-97.5 overflow-hidden border-b border-[#202226]">
         {featured?.posterImage ? (
           <img src={featured.posterImage} alt="" className="absolute inset-0 h-full w-full object-cover opacity-35" />
         ) : null}
@@ -150,7 +150,7 @@ export default async function Home() {
           <span>© 2024 Zynema Entertainment</span>
           <div className="flex gap-4"><span>Privacy Policy</span><span>Terms of Service</span><span className="flex items-center gap-1"><Heart size={9} /> Made for your next watch</span></div>
         </footer>
-      </div>
+      </div> */}
     </main>
   );
 }
