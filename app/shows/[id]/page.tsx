@@ -148,7 +148,7 @@ export default async function ShowDetails({
         </div>
       </section>
 
-      <section className="mt-8 grid gap-8 px-2 xl:grid-cols-[1.7fr_0.9fr]">
+      <section className="mt-8 grid gap-8 px-2 xl:grid-cols-[1.7fr_0.9fr] bg-[#0d0e10]">
         <div className="space-y-6">
           <div className="rounded-2xl p-4 sm:p-5">
             <div className="flex items-center justify-between gap-3 border-b border-[#242527] pb-3">
@@ -178,7 +178,7 @@ export default async function ShowDetails({
               </label>
             </div>
 
-            <div className="mt-4 space-y-4">
+            <div className="mt-4 space-y-4 ">
               {topEpisodes.length > 0 ? (
                 topEpisodes.map((episode, index) => (
                   <div key={episode.id} className="flex gap-4 rounded-xl p-2.5">
