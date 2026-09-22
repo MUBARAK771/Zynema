@@ -30,7 +30,7 @@ export default function Sidebar() {
           <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[#FF3D00]/10">
             <img src="/zynema-logo.png" alt="Zynema logo" className="h-8 w-8 object-contain" />
           </div>
-          <span className="text-base font-semibold tracking-tight">Zynema</span>
+          <span className="text-base text-[#FFF] font-semibold tracking-tight">Zynema</span>
         </div>
 
         <nav className="space-y-1">
