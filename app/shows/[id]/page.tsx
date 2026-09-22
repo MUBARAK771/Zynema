@@ -100,7 +100,7 @@ export default async function ShowDetails({
   const topEpisodes = episodes.slice(0, 4);
 
   return (
-    <main className="mx-auto max-w-6xl pb-8 md:scrollbar-none">
+    <main className="mx-auto max-w-6xl pb-8 md:scrollbar-none bg-[#0d0e10]">
       <section className="relative overflow-hidden border border-[#0F0F10] bg-[#0F0F10] shadow-2xl">
         <div className="absolute inset-0">
           {heroImage ? (
