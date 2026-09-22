@@ -28,10 +28,11 @@ export default function Header() {
     }
     setLoading(true);
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/search/shows?q=${encodeURIComponent(term)}`
-      );
-      const data = await res.json();
+      const res = await fetch(`/api/search?q=${encodeURIComponent(term)}`);
+      if (!res.ok) {
+        throw new Error("Search request failed");
+      }
+      const data = (await res.json()) as Show[];
       setResults(data);
       setOpen(true);
     } catch (err) {
