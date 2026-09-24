@@ -1,6 +1,6 @@
 const PATH = {
   HOME: "/",
-  DASHBOARD: "/dashboard",
+  DASHBOARD: "/",
   SETTINGS: "/settings",
   PROFILE: "/profile",
 };

@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { Star, Calendar, Clock } from "lucide-react";
-import type { Show } from "@/lib/tvmaze";
+import type { Movie } from "@/lib/tmdb";
 
-export default function ShowCard({ show }: { show: Show }) {
+export default function ShowCard({ show }: { show: Movie }) {
   return (
-    <Link href={`/shows/${show.id}`} className="group block overflow-hidden rounded-lg border border-[#242529] bg-base-card transition-colors hover:border-accent/50">
+    <Link href={`/movies/${show.id}`} className="group block overflow-hidden rounded-lg border border-[#242529] bg-base-card transition-colors hover:border-accent/50">
       <article>
         <div className="relative aspect-[16/10] bg-zinc-800">
           {show.posterImage && (

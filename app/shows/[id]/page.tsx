@@ -87,8 +87,8 @@ export default async function ShowDetails({
     return (
       <main className="p-6">
         <h1 className="text-2xl font-bold">Show not found</h1>
-        <Link href="/dashboard" className="mt-4 inline-block text-accent">
-          Back to dashboard
+        <Link href="/" className="mt-4 inline-block text-accent">
+          Back to home
         </Link>
       </main>
     );
@@ -117,8 +117,8 @@ export default async function ShowDetails({
               <span className="rounded bg-white/5 px-2 py-1">{show.premiered?.slice(0, 4) ?? "—"}</span>
               <span className="rounded bg-white/5 px-2 py-1">{show.genres.length ? `${show.genres.length} seasons` : "Series"}</span>
             </div>
-            <Link href="/dashboard" className="text-sm text-zinc-300 hover:text-white">
-              Back to dashboard
+            <Link href="/" className="text-sm text-zinc-300 hover:text-white">
+              Back to home
             </Link>
           </div>
 

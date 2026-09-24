@@ -1,35 +1,63 @@
-import Link from "next/link";
+import { ArrowUpDown, LayoutGrid, List } from "lucide-react";
+import Filters, { ActiveFilterPills } from "../components/Filter";
+import { getMovies } from "@/lib/tmdb";
+import ShowCard from "../components/ShowCard";
+import Pagination from "../components/Pagination";
 
-const highlights = [
-  "Top picks of the week",
-  "Fresh sci-fi premieres",
-  "Critics’ favorites",
-];
+export default async function DiscoverPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ page?: string }>;
+}) {
+  const params = (await searchParams) ?? {};
+  const requestedPage = Number.parseInt(params.page ?? "1", 10);
+  const page = Number.isNaN(requestedPage) ? 1 : Math.min(Math.max(requestedPage, 1), 10);
+  const { movies, totalPages } = await getMovies(page);
 
-export default function DiscoverPage() {
   return (
-    <main className="mx-auto max-w-5xl p-6">
-      <div className="rounded-2xl border border-[#242529] bg-base-panel p-6">
-        <p className="text-sm font-medium uppercase tracking-[0.2em] text-accent">Discover</p>
-        <h1 className="mt-3 text-3xl font-bold text-white">Find your next obsession</h1>
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-300">
-          Explore curated collections, trending titles, and hand-picked recommendations built for binge-watch sessions.
-        </p>
+    <div className="flex min-h-screen">
+      <Filters />
 
-        <div className="mt-6 grid gap-4 sm:grid-cols-3">
-          {highlights.map((item) => (
-            <div key={item} className="rounded-xl border border-[#242529] bg-[#16181C] p-4 text-sm text-zinc-200">
-              {item}
+      <main className="flex-1 min-w-0 px-4 py-5 lg:px-6">
+        <div className="flex items-start justify-between mb-1">
+          <div>
+            <h1 className="text-2xl font-bold">Discover</h1>
+
+            <p className="text-sm text-muted mt-1">
+              Found {movies.length} movies matching your criteria
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button className="flex items-center gap-2 bg-base-panel border border-[#242529] rounded-lg px-3 py-2 text-sm text-zinc-300">
+              <ArrowUpDown size={14} />
+              Popularity
+            </button>
+
+            <div className="flex items-center bg-base-panel border border-[#242529] rounded-lg p-1">
+              <button className="p-1.5 rounded-md bg-base-panelBorder">
+                <LayoutGrid size={16} />
+              </button>
+
+              <button className="p-1.5 rounded-md text-muted">
+                <List size={16} />
+              </button>
             </div>
+          </div>
+        </div>
+
+        <div className="mt-5">
+          <ActiveFilterPills />
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4">
+          {movies.map((show) => (
+            <ShowCard key={show.id} show={show} />
           ))}
         </div>
 
-        <div className="mt-6">
-          <Link href="/" className="inline-flex items-center text-sm text-accent hover:text-white">
-            Back to home
-          </Link>
-        </div>
-      </div>
-    </main>
+        <Pagination currentPage={page} totalPages={totalPages} />
+      </main>
+    </div>
   );
 }

@@ -37,7 +37,7 @@ export default function Sidebar() {
           {nav.map(({ href, label, icon: Icon }) => {
             const active =
               href === "/"
-                ? pathname === "/" || pathname === "/dashboard"
+                ? pathname === "/"
                 : pathname === href;
 
             return (

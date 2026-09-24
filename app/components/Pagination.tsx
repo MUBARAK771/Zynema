@@ -11,7 +11,7 @@ export default function Pagination({
     new Set([1, currentPage - 1, currentPage, currentPage + 1, totalPages]),
   ).filter((page) => page >= 1 && page <= totalPages);
 
-  const pageLink = (page: number) => `/dashboard?page=${page}`;
+  const pageLink = (page: number) => `/discover?page=${page}`;
 
   return (
     <div className="flex items-center justify-center gap-2 pt-10 pb-4 border-t border-[#242529] mt-8">
