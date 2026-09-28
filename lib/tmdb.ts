@@ -6,6 +6,7 @@ export type Movie = {
   runtime: string;
   rating: number;
   posterImage?: string;
+  backdropImage?: string;
   overview?: string;
 };
 
@@ -15,6 +16,12 @@ export type WatchProvider = {
   link: string;
 };
 
+export type MovieTrailer = {
+  key: string;
+  name: string;
+  site: "YouTube";
+};
+
 type TMDBMovie = {
   id: number;
   title: string;
@@ -22,6 +29,8 @@ type TMDBMovie = {
   genre_ids?: number[];
   vote_average: number;
   poster_path: string | null;
+  backdrop_path?: string | null;
+  overview?: string;
 };
 
 type TMDBResponse = {
@@ -40,6 +49,55 @@ type TMDBProvider = {
   provider_name: string;
   logo_path: string | null;
 };
+
+type TMDBVideo = {
+  key: string;
+  name: string;
+  site: string;
+  type: string;
+  official: boolean;
+};
+
+const TMDB_REQUEST_TIMEOUT_MS = 8_000;
+
+async function fetchTMDB(url: URL, init: RequestInit & { next?: { revalidate: number } }) {
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), TMDB_REQUEST_TIMEOUT_MS);
+
+    try {
+      return await fetch(url, { ...init, signal: controller.signal });
+    } catch (error) {
+      lastError = error;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  const reason = lastError instanceof Error ? lastError.message : "unknown network error";
+  throw new Error(`Unable to connect to TMDB: ${reason}`, { cause: lastError });
+}
+
+function getTMDBAuth() {
+  const accessToken = process.env.TMDB_API_READ_ACCESS_TOKEN?.trim();
+  const apiKey = process.env.TMDB_API_KEY?.trim();
+
+  if (!accessToken && !apiKey) {
+    throw new Error("TMDB_API_KEY or TMDB_API_READ_ACCESS_TOKEN is not configured");
+  }
+
+  return accessToken
+    ? { headers: { Authorization: `Bearer ${accessToken}` } }
+    : { apiKey };
+}
+
+function addTMDBAuth(url: URL, auth: ReturnType<typeof getTMDBAuth>) {
+  if ("apiKey" in auth && auth.apiKey) {
+    url.searchParams.set("api_key", auth.apiKey);
+  }
+}
 
 const genreNames: Record<number, string> = {
   28: "Action",
@@ -74,25 +132,22 @@ function getGenreNames(movie: TMDBMovie & { genres?: { id: number; name: string 
 }
 
 export async function getMovies(page = 1): Promise<{ movies: Movie[]; totalPages: number }> {
-  const apiKey = process.env.TMDB_API_KEY;
-
-  if (!apiKey) {
-    throw new Error("TMDB_API_KEY is not configured");
-  }
+  const auth = getTMDBAuth();
 
   const url = new URL("https://api.themoviedb.org/3/discover/movie");
-  url.searchParams.set("api_key", apiKey);
+  addTMDBAuth(url, auth);
   url.searchParams.set("language", "en-US");
   url.searchParams.set("sort_by", "popularity.desc");
   url.searchParams.set("include_adult", "false");
   url.searchParams.set("page", String(page));
 
-  const response = await fetch(url, {
+  const response = await fetchTMDB(url, {
+    ...auth,
     next: { revalidate: 3600 },
   });
 
   if (!response.ok) {
-    throw new Error("Unable to load movies from TMDB");
+    throw new Error(`TMDB returned ${response.status} ${response.statusText}`);
   }
 
   const data = (await response.json()) as TMDBResponse;
@@ -109,28 +164,28 @@ export async function getMovies(page = 1): Promise<{ movies: Movie[]; totalPages
       posterImage: movie.poster_path
         ? `https://image.tmdb.org/t/p/w780${movie.poster_path}`
         : undefined,
+      backdropImage: movie.backdrop_path
+        ? `https://image.tmdb.org/t/p/w1280${movie.backdrop_path}`
+        : undefined,
     })),
     totalPages: Math.min(data.total_pages, 500),
   };
 }
 
 export async function getLatestMovie(): Promise<Movie | null> {
-  const apiKey = process.env.TMDB_API_KEY;
-
-  if (!apiKey) {
-    throw new Error("TMDB_API_KEY is not configured");
-  }
+  const auth = getTMDBAuth();
 
   const url = new URL("https://api.themoviedb.org/3/movie/latest");
-  url.searchParams.set("api_key", apiKey);
+  addTMDBAuth(url, auth);
   url.searchParams.set("language", "en-US");
 
-  const response = await fetch(url, {
+  const response = await fetchTMDB(url, {
+    ...auth,
     next: { revalidate: 3600 },
   });
 
   if (response.status === 404) return null;
-  if (!response.ok) throw new Error("Unable to load the latest movie from TMDB");
+  if (!response.ok) throw new Error(`TMDB returned ${response.status} ${response.statusText}`);
 
   const movie = (await response.json()) as TMDBMovie & { overview?: string };
 
@@ -149,32 +204,38 @@ export async function getLatestMovie(): Promise<Movie | null> {
 export async function getMovie(id: string): Promise<{
   movie: Movie & { overview: string; backdropImage?: string };
   providers: WatchProvider[];
+  trailer?: MovieTrailer;
 } | null> {
-  const apiKey = process.env.TMDB_API_KEY;
-
-  if (!apiKey) {
-    throw new Error("TMDB_API_KEY is not configured");
-  }
+  const auth = getTMDBAuth();
 
   const movieUrl = new URL(`https://api.themoviedb.org/3/movie/${encodeURIComponent(id)}`);
-  movieUrl.searchParams.set("api_key", apiKey);
+  addTMDBAuth(movieUrl, auth);
   movieUrl.searchParams.set("language", "en-US");
 
   const providerUrl = new URL(`https://api.themoviedb.org/3/movie/${encodeURIComponent(id)}/watch/providers`);
-  providerUrl.searchParams.set("api_key", apiKey);
+  addTMDBAuth(providerUrl, auth);
+  const videosUrl = new URL(`https://api.themoviedb.org/3/movie/${encodeURIComponent(id)}/videos`);
+  addTMDBAuth(videosUrl, auth);
+  videosUrl.searchParams.set("language", "en-US");
 
-  const [movieResponse, providerResponse] = await Promise.all([
-    fetch(movieUrl, { next: { revalidate: 3600 } }),
-    fetch(providerUrl, { next: { revalidate: 3600 } }),
+  const [movieResponse, providerResponse, videosResponse] = await Promise.all([
+    fetchTMDB(movieUrl, { ...auth, next: { revalidate: 3600 } }),
+    fetchTMDB(providerUrl, { ...auth, next: { revalidate: 3600 } }),
+    fetchTMDB(videosUrl, { ...auth, next: { revalidate: 3600 } }),
   ]);
 
   if (movieResponse.status === 404) return null;
-  if (!movieResponse.ok) throw new Error("Unable to load movie details from TMDB");
+  if (!movieResponse.ok) throw new Error(`TMDB returned ${movieResponse.status} ${movieResponse.statusText}`);
 
   const movie = (await movieResponse.json()) as TMDBMovieDetails;
   const providerData = providerResponse.ok
     ? ((await providerResponse.json()) as { results?: Record<string, { link?: string; flatrate?: TMDBProvider[]; rent?: TMDBProvider[]; buy?: TMDBProvider[] }> })
     : { results: {} };
+  const videosData = videosResponse.ok
+    ? ((await videosResponse.json()) as { results?: TMDBVideo[] })
+    : { results: [] };
+  const trailers = (videosData.results ?? []).filter((video) => video.site === "YouTube" && video.type === "Trailer");
+  const selectedTrailer = trailers.find((video) => video.official) ?? trailers[0];
   const region = providerData.results?.US;
   const uniqueProviders = new Map<string, WatchProvider>();
 
@@ -201,5 +262,32 @@ export async function getMovie(id: string): Promise<{
       backdropImage: movie.backdrop_path ? `https://image.tmdb.org/t/p/w1280${movie.backdrop_path}` : undefined,
     },
     providers: [...uniqueProviders.values()],
+    trailer: selectedTrailer
+      ? { key: selectedTrailer.key, name: selectedTrailer.name, site: "YouTube" }
+      : undefined,
   };
+}
+
+export async function searchMovies(query: string): Promise<Movie[]> {
+  const auth = getTMDBAuth();
+  const url = new URL("https://api.themoviedb.org/3/search/movie");
+  addTMDBAuth(url, auth);
+  url.searchParams.set("query", query);
+  url.searchParams.set("include_adult", "false");
+  url.searchParams.set("language", "en-US");
+  url.searchParams.set("page", "1");
+
+  const response = await fetchTMDB(url, { ...auth, next: { revalidate: 300 } });
+  if (!response.ok) throw new Error(`TMDB returned ${response.status} ${response.statusText}`);
+
+  const data = (await response.json()) as TMDBResponse;
+  return data.results.slice(0, 8).map((movie) => ({
+    id: movie.id,
+    title: movie.title,
+    genre: getGenreNames(movie) || "Movie",
+    year: movie.release_date?.slice(0, 4) || "—",
+    runtime: "Movie",
+    rating: movie.vote_average,
+    posterImage: movie.poster_path ? `https://image.tmdb.org/t/p/w342${movie.poster_path}` : undefined,
+  }));
 }

@@ -1,8 +1,9 @@
 import { ArrowUpDown, LayoutGrid, List } from "lucide-react";
 import Filters, { ActiveFilterPills } from "../components/Filter";
-import { getMovies } from "@/lib/tmdb";
+import { getMovies, type Movie } from "@/lib/tmdb";
 import ShowCard from "../components/ShowCard";
 import Pagination from "../components/Pagination";
+import { getVideoAssets } from "@/lib/videoCatalog";
 
 export default async function DiscoverPage({
   searchParams,
@@ -12,7 +13,20 @@ export default async function DiscoverPage({
   const params = (await searchParams) ?? {};
   const requestedPage = Number.parseInt(params.page ?? "1", 10);
   const page = Number.isNaN(requestedPage) ? 1 : Math.min(Math.max(requestedPage, 1), 10);
-  const { movies, totalPages } = await getMovies(page);
+  let movies: Movie[] = [];
+  let totalPages = 1;
+  let loadError: string | null = null;
+  let playableMovieIds = new Set<number>();
+
+  try {
+    const result = await getMovies(page);
+    movies = result.movies;
+    totalPages = result.totalPages;
+    const videoAssets = await getVideoAssets(movies.map((movie) => movie.id));
+    playableMovieIds = new Set(videoAssets.keys());
+  } catch (error) {
+    loadError = error instanceof Error ? error.message : "Unable to load movies";
+  }
 
   return (
     <div className="flex min-h-screen">
@@ -24,7 +38,7 @@ export default async function DiscoverPage({
             <h1 className="text-2xl font-bold">Discover</h1>
 
             <p className="text-sm text-muted mt-1">
-              Found {movies.length} movies matching your criteria
+              {loadError ? "Movie discovery is temporarily unavailable" : `Found ${movies.length} movies matching your criteria`}
             </p>
           </div>
 
@@ -50,11 +64,21 @@ export default async function DiscoverPage({
           <ActiveFilterPills />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4">
-          {movies.map((show) => (
-            <ShowCard key={show.id} show={show} />
-          ))}
-        </div>
+        {loadError ? (
+          <div className="mt-8 rounded-lg border border-[#242529] bg-base-card p-6 text-sm text-zinc-400">
+            {loadError.includes("401")
+              ? "TMDB rejected the API credential. Replace TMDB_API_KEY or TMDB_API_READ_ACCESS_TOKEN in .env, then restart the dev server."
+              : loadError.includes("connect") || loadError.includes("aborted")
+                ? "We could not connect to TMDB right now. Check your network connection or try again shortly."
+                : "TMDB could not load movies right now. Try again shortly."}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+            {movies.map((show) => (
+              <ShowCard key={show.id} show={show} hasFullMovie={playableMovieIds.has(show.id)} />
+            ))}
+          </div>
+        )}
 
         <Pagination currentPage={page} totalPages={totalPages} />
       </main>

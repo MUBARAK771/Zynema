@@ -3,8 +3,9 @@ import { useState, useRef, useEffect } from "react";
 import { Search, Bell, ChevronDown } from "lucide-react";
 import { useDebouncedCallback } from "use-debounce";
 import { useRouter } from "next/navigation";
+import type { Movie } from "@/lib/tmdb";
 
-interface Show {
+interface TVMazeShow {
   show: {
     id: number;
     name: string;
@@ -12,17 +13,22 @@ interface Show {
   };
 }
 
+type SearchResults = {
+  shows: TVMazeShow[];
+  movies: Movie[];
+};
+
 export default function Header() {
   const router = useRouter();
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<Show[]>([]);
+  const [results, setResults] = useState<SearchResults>({ shows: [], movies: [] });
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleSearch = useDebouncedCallback(async (term: string) => {
     if (!term) {
-      setResults([]);
+      setResults({ shows: [], movies: [] });
       setOpen(false);
       return;
     }
@@ -32,7 +38,7 @@ export default function Header() {
       if (!res.ok) {
         throw new Error("Search request failed");
       }
-      const data = (await res.json()) as Show[];
+      const data = (await res.json()) as SearchResults;
       setResults(data);
       setOpen(true);
     } catch (err) {
@@ -67,8 +73,8 @@ export default function Header() {
             setQuery(e.target.value);
             handleSearch(e.target.value);
           }}
-          onFocus={() => results.length > 0 && setOpen(true)}
-          placeholder="Search shows, episodes, or actors..."
+          onFocus={() => (results.shows.length > 0 || results.movies.length > 0) && setOpen(true)}
+          placeholder="Search movies, shows, episodes, or actors..."
           className="w-full bg-base-panel border border-[#242529] rounded-full pl-10 pr-4 py-2.5 text-sm text-zinc-200 placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-accent"
         />
 
@@ -77,13 +83,35 @@ export default function Header() {
             {loading && (
               <p className="px-4 py-3 text-sm text-zinc-200">Searching...</p>
             )}
-            {!loading && results.length === 0 && (
+            {!loading && results.shows.length === 0 && results.movies.length === 0 && (
               <p className="px-4 py-3 text-sm text-zinc-200">No results found.</p>
             )}
-            {!loading &&
-              results.map(({ show }) => (
+            {!loading && results.movies.length > 0 ? (
+              <>
+                <p className="px-4 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Movies</p>
+                {results.movies.map((movie) => (
+                  <button
+                    key={`movie-${movie.id}`}
+                    onClick={() => {
+                      setOpen(false);
+                      setQuery(movie.title);
+                      router.push(`/movies/${movie.id}`);
+                    }}
+                    className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-white/5"
+                  >
+                    {movie.posterImage ? <img src={movie.posterImage} alt="" className="h-10 w-8 rounded object-cover" /> : null}
+                    <span className="min-w-0 flex-1 truncate text-sm text-zinc-200">{movie.title}</span>
+                    <span className="text-[10px] uppercase text-zinc-500">{movie.year}</span>
+                  </button>
+                ))}
+              </>
+            ) : null}
+            {!loading && results.shows.length > 0 ? (
+              <>
+                <p className="px-4 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">TV Shows</p>
+                {results.shows.map(({ show }) => (
                 <button
-                  key={show.id}
+                  key={`show-${show.id}`}
                   onClick={() => {
                     setOpen(false);
                     setQuery(show.name);
@@ -98,9 +126,11 @@ export default function Header() {
                       className="w-8 h-10 object-cover rounded"
                     />
                   )}
-                  <span className="text-sm text-zinc-200 ">{show.name}</span>
+                  <span className="text-sm text-zinc-200">{show.name}</span>
                 </button>
-              ))}
+                ))}
+              </>
+            ) : null}
           </div>
         )}
       </div>
@@ -111,7 +141,7 @@ export default function Header() {
           <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-accent" />
         </button>
         <button className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-300 to-orange-500" />
+          <div className="w-8 h-8 rounded-full bg-linear-to-br from-amber-300 to-orange-500" />
           <ChevronDown size={16} className="text-muted" />
         </button>
       </div>

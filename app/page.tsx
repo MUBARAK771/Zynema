@@ -1,159 +1,104 @@
 import Link from "next/link";
-import {
-  ArrowRight,
-  CalendarDays,
-  Clapperboard,
-  Clock3,
-  Flame,
-  Gamepad2,
-  Heart,
-  MonitorPlay,
-  Play,
-  Radio,
-  Sparkles,
-  Star,
-  TrendingUp,
-  Tv,
-  Zap,
-} from "lucide-react";
-import { getShows, type Show } from "@/lib/tvmaze";
-import { getLatestMovie, type Movie } from "@/lib/tmdb";
-import HeroSlideshow from "@/app/components/HeroSlideshow";
+import { ArrowRight, CalendarDays, Clapperboard, Flame, Play, Star } from "lucide-react";
+import { getMovies, type Movie } from "@/lib/tmdb";
 
-const genres = [
-  { label: "Sci-Fi", icon: Zap },
-  { label: "Action", icon: Flame },
-  { label: "Thriller", icon: Clapperboard },
-  { label: "Romance", icon: Heart },
-  { label: "Comedy", icon: Gamepad2 },
-  { label: "Drama", icon: MonitorPlay },
-];
+const genres = ["Action", "Adventure", "Animation", "Comedy", "Crime", "Drama", "Fantasy", "Horror", "Mystery", "Sci-Fi"];
 
-function CompactCard({ show }: { show: Show }) {
+function MoviePoster({ movie, featured = false }: { movie: Movie; featured?: boolean }) {
   return (
-    <Link href={`/shows/${show.id}`} className="group min-w-0">
-      <article className="overflow-hidden rounded-lg border border-[#292b2f] bg-[#1b1d20] transition hover:-translate-y-0.5 hover:border-[#ff3d00]/70">
-        <div className="relative aspect-[1.55/1] overflow-hidden bg-[#24262a]">
-          {show.posterImage ? (
-            <img
-              src={show.posterImage}
-              alt={show.title}
-              className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-            />
-          ) : null}
-          <div className="absolute inset-0 bg-linear-to-t from-black/35 to-transparent" />
-          <span className="absolute right-2 top-2 flex items-center gap-1 rounded bg-black/75 px-1.5 py-1 text-[10px] font-semibold">
-            <Star size={10} className="fill-[#ffb400] text-[#ffb400]" />
-            {show.rating.toFixed(1)}
+    <Link href={`/movies/${movie.id}`} className="group block min-w-0">
+      <article className="overflow-hidden border border-[#28292d] bg-[#111214] transition-colors hover:border-[#ff4b2b]/70">
+        <div className={`relative overflow-hidden bg-[#202124] ${featured ? "aspect-16/10" : "aspect-2/3"}`}>
+          {movie.posterImage ? <img src={movie.posterImage} alt={`${movie.title} poster`} className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.035]" /> : null}
+          <div className="absolute inset-0 bg-linear-to-t from-black/85 via-black/5 to-black/10" />
+          <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded bg-black/75 px-2 py-1 text-[10px] font-bold text-white">
+            <Star size={10} className="fill-[#f8c34a] text-[#f8c34a]" />{movie.rating.toFixed(1)}
           </span>
+          {featured ? (
+            <div className="absolute inset-x-0 bottom-0 p-4 sm:p-6">
+              <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase text-[#ff765c]"><Flame size={12} /> Featured movie</span>
+              <h2 className="mt-2 max-w-2xl text-2xl font-extrabold leading-tight text-white sm:text-4xl">{movie.title}</h2>
+              <p className="mt-2 line-clamp-2 max-w-xl text-xs leading-5 text-zinc-300 sm:text-sm">{movie.overview}</p>
+              <span className="mt-4 inline-flex items-center gap-2 rounded-sm bg-[#f04427] px-4 py-2.5 text-xs font-bold text-white transition group-hover:bg-[#ff6040]"><Play size={14} fill="currentColor" /> View movie <ArrowRight size={13} /></span>
+            </div>
+          ) : null}
         </div>
-        <div className="p-2.5">
-          <h3 className="truncate text-[11px] font-semibold text-zinc-100">{show.title}</h3>
-          <p className="mt-0.5 truncate text-[10px] text-zinc-500">{show.genre}</p>
-          <div className="mt-2 flex items-center justify-between text-[9px] text-zinc-500">
-            <span className="flex items-center gap-1"><CalendarDays size={10} /> {show.year}</span>
-            <span className="flex items-center gap-1"><Clock3 size={10} /> {show.runtime}</span>
+        {!featured ? (
+          <div className="p-2.5 sm:p-3">
+            <h3 className="truncate text-xs font-semibold text-zinc-100 sm:text-sm">{movie.title}</h3>
+            <div className="mt-2 flex items-center justify-between text-[10px] text-zinc-500">
+              <span className="inline-flex items-center gap-1"><CalendarDays size={11} />{movie.year}</span>
+              <span>{movie.genre.split(",")[0]}</span>
+            </div>
           </div>
-        </div>
+        ) : null}
       </article>
     </Link>
   );
 }
 
-function LatestMovie({ movie }: { movie: Movie | null }) {
-  if (!movie) return null;
-
-  return (
-    <section className="mt-10 overflow-hidden rounded-lg border border-[#3c302d] bg-[#17191c]">
-      <div className="grid gap-6 md:grid-cols-[180px_1fr]">
-        <div className="aspect-2/3 bg-[#24262a] md:aspect-auto">
-          {movie.posterImage ? (
-            <img src={movie.posterImage} alt={`${movie.title} poster`} className="h-full w-full object-cover" />
-          ) : null}
-        </div>
-        <div className="flex flex-col justify-center p-5 md:p-7">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#ff754b]">Latest from TMDB</span>
-          <h2 className="mt-2 text-2xl font-bold text-white md:text-3xl">{movie.title}</h2>
-          <div className="mt-3 flex flex-wrap gap-3 text-xs text-zinc-400">
-            <span>{movie.year}</span>
-            <span>{movie.genre}</span>
-            <span>{movie.rating.toFixed(1)} Rating</span>
-          </div>
-          <p className="mt-4 max-w-2xl text-sm leading-6 text-zinc-400">
-            {movie.overview || "No description is available yet for this movie."}
-          </p>
-          <Link href={`/movies/${movie.id}`} className="mt-5 inline-flex w-fit items-center rounded-full bg-[#ff3d00] px-5 py-2.5 text-xs font-semibold text-white hover:bg-[#ff551f]">
-            View Watch Options
-          </Link>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function RowTitle({ icon, title, subtitle }: { icon: React.ReactNode; title: string; subtitle: string }) {
-  return (
-    <div className="mb-4 flex items-end justify-between gap-4">
-      <div>
-        <h2 className="flex items-center gap-2 text-base font-bold text-zinc-100">{icon}{title}</h2>
-        <p className="mt-0.5 text-[10px] text-zinc-500">{subtitle}</p>
-      </div>
-      <Link href="/discover" className="flex shrink-0 items-center gap-1 text-[10px] text-zinc-400 hover:text-white">
-        Explore All <ArrowRight size={11} />
-      </Link>
-    </div>
-  );
-}
-
 export default async function Home() {
-  const [{ shows }, latestMovie] = await Promise.all([
-    getShows(1),
-    getLatestMovie().catch(() => null),
-  ]);
-  const trending = shows.slice(1, 5);
-  const popular = shows.slice(0, 4);
+  let movies: Movie[] = [];
+  try {
+    ({ movies } = await getMovies(1));
+  } catch {
+    movies = [];
+  }
+
+  const featured = movies[0];
+  const recent = movies.slice(1, 13);
 
   return (
-    <main className="min-h-full bg-[#0d0e10] pb-10 text-base">
-      <HeroSlideshow shows={shows.slice(0, 5)} />
-
-      <div className="mx-auto max-w-7xl px-5 lg:px-8">
-        <div className="flex gap-2 overflow-x-auto py-6 scrollbar-none">
-          {genres.map(({ label, icon: Icon }, index) => (
-            <button key={label} className={`flex shrink-0 items-center gap-1.5 rounded-md border px-4 py-2 text-[12px] ${index === 0 ? "border-[#ff3d00] bg-[#ff3d00]/10 text-white" : "border-[#2b2d31] bg-[#1a1c20] text-zinc-300 hover:border-zinc-500"}`}><Icon size={12} />{label}</button>
+    <main className="min-h-full bg-[#0b0c0e] pb-12 text-white">
+      <div className="mx-auto max-w-375 px-4 py-5 sm:px-6 lg:px-8">
+        <nav aria-label="Movie genres" className="flex gap-2 overflow-x-auto border-b border-[#242529] pb-4 scrollbar-none">
+          <span className="mr-1 inline-flex shrink-0 items-center gap-2 pr-2 text-xs font-bold uppercase text-zinc-300"><Clapperboard size={14} className="text-[#ff4b2b]" /> Browse</span>
+          {genres.map((genre, index) => (
+            <Link key={genre} href={`/discover?genre=${encodeURIComponent(genre)}`} className={`shrink-0 border px-3 py-1.5 text-[11px] font-medium transition-colors ${index === 0 ? "border-[#f04427] bg-[#f04427] text-white" : "border-[#2c2d31] bg-[#151619] text-zinc-300 hover:border-zinc-500 hover:text-white"}`}>
+              {genre}
+            </Link>
           ))}
-        </div>
+        </nav>
 
-        <section className="py-2 ">
-          <RowTitle icon={<TrendingUp size={14} className="text-[#ff3d00]" />}  title="Trending Now" subtitle="The most watched shows on Zynema this week" />
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">{trending.map((show) => <CompactCard key={show.id} show={show} />)}</div>
-        </section>
+        {featured ? (
+          <section className="mt-5 grid gap-3 lg:grid-cols-[minmax(0,1.8fr)_minmax(260px,0.8fr)]" aria-label="Featured and popular movies">
+            <MoviePoster movie={featured} featured />
+            <div className="hidden grid-rows-2 gap-3 lg:grid">
+              {movies.slice(1, 3).map((movie) => <MoviePoster key={movie.id} movie={movie} featured />)}
+            </div>
+          </section>
+        ) : (
+          <section className="mt-5 border border-[#292a2e] bg-[#111214] px-5 py-8">
+            <h1 className="text-xl font-bold">Movies worth your time</h1>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">Movie listings are temporarily unavailable. Check your TMDB configuration or browse the catalog.</p>
+            <Link href="/discover" className="mt-4 inline-flex items-center gap-2 bg-[#f04427] px-4 py-2.5 text-xs font-bold">Open discover <ArrowRight size={14} /></Link>
+          </section>
+        )}
 
-        <section className="py-8">
-          <RowTitle icon={<Tv size={14} className="text-[#ff3d00]" />} title="Currently Airing" subtitle="Fresh episodes available right now" />
-          <div className="grid gap-4 md:grid-cols-2">
-            {[popular[0], popular[1]].map((show) => show ? (
-              <Link key={show.id} href={`/shows/${show.id}`} className="group relative h-32 overflow-hidden rounded-lg border border-[#2b2d31] bg-[#1b1d20]">
-                {show.posterImage ? <img src={show.posterImage} alt={show.title} className="h-full w-full object-cover opacity-70 transition group-hover:scale-105" /> : null}
-                <div className="absolute inset-0 bg-linear-to-r from-black/90 via-black/45 to-transparent" />
-                <div className="absolute inset-0 flex flex-col justify-center p-4"><span className="mb-2 w-fit rounded bg-[#ff3d00] px-1.5 py-1 text-[8px] font-bold">LIVE</span><h3 className="text-sm font-bold">{show.title}</h3><p className="mt-0.5 text-[10px] text-zinc-400">{show.genre} · New Episode</p><span className="mt-3 flex w-fit items-center gap-1 rounded-full bg-white/15 px-3 py-1 text-[9px]"><Play size={9} className="" /> Watch Live</span></div>
-              </Link>
-            ) : null)}
+        <section className="mt-8" aria-labelledby="recent-heading">
+          <div className="mb-4 flex items-end justify-between border-b border-[#25262a] pb-3">
+            <div>
+              <h1 id="recent-heading" className="flex items-center gap-2 text-lg font-bold sm:text-xl"><Flame size={17} className="text-[#ff4b2b]" /> Recently added movies</h1>
+              <p className="mt-1 text-[11px] text-zinc-500">Popular picks, updated from TMDB</p>
+            </div>
+            <Link href="/discover" className="inline-flex items-center gap-1 text-xs text-zinc-400 hover:text-white">Browse all <ArrowRight size={13} /></Link>
           </div>
+          {recent.length ? (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+              {recent.map((movie) => <MoviePoster key={movie.id} movie={movie} />)}
+            </div>
+          ) : !featured ? null : (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+              {movies.map((movie) => <MoviePoster key={movie.id} movie={movie} />)}
+            </div>
+          )}
         </section>
 
-        <section className="py-2">
-          <RowTitle icon={<Flame size={14} className="text-[#ff3d00]" />} title="Global Popularity" subtitle="Fan favorites across all regions" />
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">{popular.map((show) => <CompactCard key={show.id} show={show} />)}</div>
+        <section className="mt-10 flex items-center justify-between gap-4 border-y border-[#292a2e] py-5">
+          <div><p className="text-sm font-bold">Find your next movie</p><p className="mt-1 text-xs text-zinc-500">Search the catalog and check official watch options.</p></div>
+          <Link href="/discover" className="shrink-0 bg-[#f04427] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#ff6040]">Discover</Link>
         </section>
-
-        <LatestMovie movie={latestMovie} />
-
-        <section className="mt-10 flex flex-col items-start justify-between gap-4 rounded-lg border border-[#3c302d] bg-linear-to-r from-[#1b1d20] to-[#2a1e1c] p-5 sm:flex-row sm:items-center">
-          <div><h2 className="text-3xl font-bold">Never miss a premiere.</h2><p className="mt-1 max-w-lg text-[12px] leading-4 text-zinc-400">Join millions of enthusiasts receiving weekly notifications about upcoming seasons, exclusive interviews, and tailored recommendations.</p></div>
-          <div className="flex shrink-0 gap-2"><Link href="/discover" className="rounded-full bg-[#ff3d00] px-5 py-2.5 text-[12px] font-semibold">Discover movies</Link><Link href="/schedule" className="rounded-full border border-zinc-500 px-5 py-2.5 text-[12px]">View Schedule</Link></div>
-        </section>
-      </div> 
+      </div>
     </main>
   );
 }
