@@ -3,6 +3,7 @@ export type Movie = {
   title: string;
   genre: string;
   year: string;
+  releaseDate?: string;
   runtime: string;
   rating: number;
   posterImage?: string;
@@ -20,6 +21,19 @@ export type MovieTrailer = {
   key: string;
   name: string;
   site: "YouTube";
+};
+
+export type MovieCastMember = {
+  id: number;
+  name: string;
+  character: string;
+  profileImage?: string;
+};
+
+export type MovieCrewMember = {
+  id: number;
+  name: string;
+  job: string;
 };
 
 type TMDBMovie = {
@@ -50,6 +64,18 @@ type TMDBProvider = {
   logo_path: string | null;
 };
 
+type TMDBWatchProvidersResponse = {
+  results?: Record<
+    string,
+    {
+      link?: string;
+      flatrate?: TMDBProvider[];
+      rent?: TMDBProvider[];
+      buy?: TMDBProvider[];
+    }
+  >;
+};
+
 type TMDBVideo = {
   key: string;
   name: string;
@@ -57,6 +83,18 @@ type TMDBVideo = {
   type: string;
   official: boolean;
 };
+
+type TMDBCredit = {
+  id: number;
+  name: string;
+  character?: string;
+  job?: string;
+  profile_path?: string | null;
+};
+
+type TMDBVideosResponse = { results?: TMDBVideo[] };
+type TMDBCreditsResponse = { cast?: TMDBCredit[]; crew?: TMDBCredit[] };
+type TMDBAlternativeTitlesResponse = { titles?: { title?: string }[] };
 
 const TMDB_REQUEST_TIMEOUT_MS = 8_000;
 
@@ -78,6 +116,24 @@ async function fetchTMDB(url: URL, init: RequestInit & { next?: { revalidate: nu
 
   const reason = lastError instanceof Error ? lastError.message : "unknown network error";
   throw new Error(`Unable to connect to TMDB: ${reason}`, { cause: lastError });
+}
+
+async function fetchOptionalTMDB<T>(
+  url: URL,
+  auth: ReturnType<typeof getTMDBAuth>,
+  label: string,
+): Promise<T | undefined> {
+  try {
+    const response = await fetchTMDB(url, { ...auth, next: { revalidate: 3600 } });
+    if (!response.ok) {
+      console.warn(`${label} request returned ${response.status}.`);
+      return undefined;
+    }
+    return (await response.json()) as T;
+  } catch (error) {
+    console.warn(`${label} could not be loaded from TMDB.`, error);
+    return undefined;
+  }
 }
 
 function getTMDBAuth() {
@@ -158,6 +214,7 @@ export async function getMovies(page = 1): Promise<{ movies: Movie[]; totalPages
       title: movie.title,
       genre: getGenreNames(movie) || "Movie",
       year: movie.release_date?.slice(0, 4) || "—",
+      releaseDate: movie.release_date || undefined,
       runtime: "Movie",
       rating: movie.vote_average,
       overview: undefined,
@@ -194,6 +251,7 @@ export async function getLatestMovie(): Promise<Movie | null> {
     title: movie.title,
     genre: getGenreNames(movie) || "Movie",
     year: movie.release_date?.slice(0, 4) || "—",
+    releaseDate: movie.release_date || undefined,
     runtime: "Movie",
     rating: movie.vote_average,
     overview: movie.overview,
@@ -204,7 +262,11 @@ export async function getLatestMovie(): Promise<Movie | null> {
 export async function getMovie(id: string): Promise<{
   movie: Movie & { overview: string; backdropImage?: string };
   providers: WatchProvider[];
+  watchGuideUrl?: string;
   trailer?: MovieTrailer;
+  cast: MovieCastMember[];
+  crew: MovieCrewMember[];
+  alternativeTitles: string[];
 } | null> {
   const auth = getTMDBAuth();
 
@@ -217,26 +279,44 @@ export async function getMovie(id: string): Promise<{
   const videosUrl = new URL(`https://api.themoviedb.org/3/movie/${encodeURIComponent(id)}/videos`);
   addTMDBAuth(videosUrl, auth);
   videosUrl.searchParams.set("language", "en-US");
+  const creditsUrl = new URL(`https://api.themoviedb.org/3/movie/${encodeURIComponent(id)}/credits`);
+  addTMDBAuth(creditsUrl, auth);
+  creditsUrl.searchParams.set("language", "en-US");
+  const alternativeTitlesUrl = new URL(
+    `https://api.themoviedb.org/3/movie/${encodeURIComponent(id)}/alternative_titles`,
+  );
+  addTMDBAuth(alternativeTitlesUrl, auth);
 
-  const [movieResponse, providerResponse, videosResponse] = await Promise.all([
+  const [
+    movieResponse,
+    providerData,
+    videosData,
+    creditsData,
+    alternativeTitlesData,
+  ] = await Promise.all([
     fetchTMDB(movieUrl, { ...auth, next: { revalidate: 3600 } }),
-    fetchTMDB(providerUrl, { ...auth, next: { revalidate: 3600 } }),
-    fetchTMDB(videosUrl, { ...auth, next: { revalidate: 3600 } }),
+    fetchOptionalTMDB<TMDBWatchProvidersResponse>(providerUrl, auth, "Watch providers"),
+    fetchOptionalTMDB<TMDBVideosResponse>(videosUrl, auth, "Movie trailers"),
+    fetchOptionalTMDB<TMDBCreditsResponse>(creditsUrl, auth, "Movie cast and crew"),
+    fetchOptionalTMDB<TMDBAlternativeTitlesResponse>(
+      alternativeTitlesUrl,
+      auth,
+      "Movie alternative titles",
+    ),
   ]);
 
   if (movieResponse.status === 404) return null;
   if (!movieResponse.ok) throw new Error(`TMDB returned ${movieResponse.status} ${movieResponse.statusText}`);
 
   const movie = (await movieResponse.json()) as TMDBMovieDetails;
-  const providerData = providerResponse.ok
-    ? ((await providerResponse.json()) as { results?: Record<string, { link?: string; flatrate?: TMDBProvider[]; rent?: TMDBProvider[]; buy?: TMDBProvider[] }> })
-    : { results: {} };
-  const videosData = videosResponse.ok
-    ? ((await videosResponse.json()) as { results?: TMDBVideo[] })
-    : { results: [] };
-  const trailers = (videosData.results ?? []).filter((video) => video.site === "YouTube" && video.type === "Trailer");
+  const availableProviderData: TMDBWatchProvidersResponse = providerData ?? { results: {} };
+  const availableVideoData: TMDBVideosResponse = videosData ?? { results: [] };
+  const availableCreditData: TMDBCreditsResponse = creditsData ?? {};
+  const availableAlternativeTitles: TMDBAlternativeTitlesResponse =
+    alternativeTitlesData ?? {};
+  const trailers = (availableVideoData.results ?? []).filter((video) => video.site === "YouTube" && video.type === "Trailer");
   const selectedTrailer = trailers.find((video) => video.official) ?? trailers[0];
-  const region = providerData.results?.US;
+  const region = availableProviderData.results?.US;
   const uniqueProviders = new Map<string, WatchProvider>();
 
   for (const provider of [...(region?.flatrate ?? []), ...(region?.rent ?? []), ...(region?.buy ?? [])]) {
@@ -255,6 +335,7 @@ export async function getMovie(id: string): Promise<{
       title: movie.title,
       genre: getGenreNames(movie) || "Movie",
       year: movie.release_date?.slice(0, 4) || "—",
+      releaseDate: movie.release_date || undefined,
       runtime: movie.runtime ? `${movie.runtime}m` : "Movie",
       rating: movie.vote_average,
       overview: movie.overview || "No description available.",
@@ -262,9 +343,31 @@ export async function getMovie(id: string): Promise<{
       backdropImage: movie.backdrop_path ? `https://image.tmdb.org/t/p/w1280${movie.backdrop_path}` : undefined,
     },
     providers: [...uniqueProviders.values()],
+    watchGuideUrl: region?.link,
     trailer: selectedTrailer
       ? { key: selectedTrailer.key, name: selectedTrailer.name, site: "YouTube" }
       : undefined,
+    cast: (availableCreditData.cast ?? []).slice(0, 12).map((member) => ({
+      id: member.id,
+      name: member.name,
+      character: member.character || "Cast",
+      profileImage: member.profile_path
+        ? `https://image.tmdb.org/t/p/w185${member.profile_path}`
+        : undefined,
+    })),
+    crew: (availableCreditData.crew ?? [])
+      .filter((member) => member.job === "Director" || member.job === "Writer")
+      .slice(0, 8)
+      .map((member) => ({
+        id: member.id,
+        name: member.name,
+        job: member.job || "Crew",
+      })),
+    alternativeTitles: [...new Set(
+      (availableAlternativeTitles.titles ?? [])
+        .map(({ title }) => title?.trim())
+        .filter((title): title is string => Boolean(title)),
+    )],
   };
 }
 
@@ -286,6 +389,7 @@ export async function searchMovies(query: string): Promise<Movie[]> {
     title: movie.title,
     genre: getGenreNames(movie) || "Movie",
     year: movie.release_date?.slice(0, 4) || "—",
+    releaseDate: movie.release_date || undefined,
     runtime: "Movie",
     rating: movie.vote_average,
     posterImage: movie.poster_path ? `https://image.tmdb.org/t/p/w342${movie.poster_path}` : undefined,

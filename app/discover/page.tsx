@@ -3,7 +3,6 @@ import Filters, { ActiveFilterPills } from "../components/Filter";
 import { getMovies, type Movie } from "@/lib/tmdb";
 import ShowCard from "../components/ShowCard";
 import Pagination from "../components/Pagination";
-import { getVideoAssets } from "@/lib/videoCatalog";
 
 export default async function DiscoverPage({
   searchParams,
@@ -16,14 +15,11 @@ export default async function DiscoverPage({
   let movies: Movie[] = [];
   let totalPages = 1;
   let loadError: string | null = null;
-  let playableMovieIds = new Set<number>();
 
   try {
     const result = await getMovies(page);
     movies = result.movies;
     totalPages = result.totalPages;
-    const videoAssets = await getVideoAssets(movies.map((movie) => movie.id));
-    playableMovieIds = new Set(videoAssets.keys());
   } catch (error) {
     loadError = error instanceof Error ? error.message : "Unable to load movies";
   }
@@ -74,8 +70,8 @@ export default async function DiscoverPage({
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-            {movies.map((show) => (
-              <ShowCard key={show.id} show={show} hasFullMovie={playableMovieIds.has(show.id)} />
+            {movies.map((movie) => (
+              <ShowCard key={movie.id} show={movie} />
             ))}
           </div>
         )}

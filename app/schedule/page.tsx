@@ -1,26 +1,20 @@
 import { Calendar } from "lucide-react";
-import Link from "next/link";
-
-// const days = [
-//   { day: "Monday", shows: ["The Last Signal", "Night Harbor"] },
-//   { day: "Tuesday", shows: ["Dust Riders", "The Hollow Crown"] },
-//   { day: "Wednesday", shows: ["Glass Echo", "Orbit 9"] },
-//   { day: "Thursday", shows: ["Velvet Run", "Blue Vault"] },
-// ];
+import ScheduleClient from "@/app/components/ScheduleClient";
+import { getNigeriaDate } from "@/lib/tv-schedule";
 
 export default function SchedulePage() {
   return (
-    <main className=" max-w-5xl p-6 xl:mx-4">
-     <div className="text-[#FF3D00] flex items-center gap-2 uppercase text-base mb-4">
-      <Calendar size={18} />
-      <p>Global Programming</p>
-     </div>
-     <div>
-      <div className=" flex flex-col">
-        <h5 className="uppercase font-bold text-[26px] ">TV Schedule</h5>
-        <p className=" text-gray-400 text-[14px]" >Plan your viewing week with our comprehensive guide across all platforms.</p>
+    <main className="mx-auto max-w-5xl p-6 xl:mx-4">
+      <div className="mb-4 flex items-center gap-2 text-base uppercase text-[#FF3D00]">
+        <Calendar size={18} />
+        <p>Nigeria Programming</p>
       </div>
-     </div>
+      <h1 className="text-[26px] font-bold uppercase">TV Schedule</h1>
+      <p className="mt-1 text-sm text-gray-400">
+        Browse TV listings from TVMaze for Nigeria. Listings depend on the shows and broadcasters
+        covered by TVMaze.
+      </p>
+      <ScheduleClient initialDate={getNigeriaDate()} />
     </main>
   );
 }

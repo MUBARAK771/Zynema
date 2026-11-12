@@ -1,5 +1,6 @@
-import { ChevronDown, Clock, Download, Info, Play, Plus, Share, Share2, ThumbsUp } from "lucide-react";
+import { ChevronDown, Clock, Download, Info, Play, Share, Share2, ThumbsUp } from "lucide-react";
 import Link from "next/link";
+import WatchlistButton from "@/app/components/WatchlistButton";
 
 const fallbackBaseUrl = "https://api.tvmaze.com";
 
@@ -135,9 +136,16 @@ export default async function ShowDetails({
             <button className="inline-flex items-center gap-2 rounded-lg bg-[#FF3D00] px-5 py-3 text-sm font-semibold text-white transition cursor-pointer hover:bg-[#ff4e1f]">
               <Play/> Watch Season 1, Ep 1
             </button>
-            <button className="inline-flex items-center gap-2 rounded-full border border-zinc-600 bg-white/5 px-4 py-3 text-sm text-zinc-200 cursor-pointer hover:border-zinc-400">
-              <Plus/> Add to My List
-            </button>
+            <WatchlistButton
+              item={{
+                type: "show",
+                id: String(show.id),
+                title: show.name,
+                year: show.premiered?.slice(0, 4) || "—",
+                posterImage: heroImage,
+              }}
+              className="inline-flex items-center gap-2 rounded-full border border-zinc-600 bg-white/5 px-4 py-3 text-sm text-zinc-200 hover:border-zinc-400"
+            />
             <button className="flex h-12 w-12 items-center justify-center rounded-full border border-zinc-600 bg-white/5 text-zinc-200 cursor-pointer hover:border-zinc-400">
               <ThumbsUp />
             </button>

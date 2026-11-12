@@ -79,7 +79,7 @@ export default async function Home() {
           <div className="mb-4 flex items-end justify-between border-b border-[#25262a] pb-3">
             <div>
               <h1 id="recent-heading" className="flex items-center gap-2 text-lg font-bold sm:text-xl"><Flame size={17} className="text-[#ff4b2b]" /> Recently added movies</h1>
-              <p className="mt-1 text-[11px] text-zinc-500">Popular picks, updated from TMDB</p>
+              {/* <p className="mt-1 text-[11px] text-zinc-500">Popular picks, updated from TMDB</p> */}
             </div>
             <Link href="/discover" className="inline-flex items-center gap-1 text-xs text-zinc-400 hover:text-white">Browse all <ArrowRight size={13} /></Link>
           </div>

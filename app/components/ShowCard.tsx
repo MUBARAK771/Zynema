@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Star, Calendar, Clock } from "lucide-react";
 import type { Movie } from "@/lib/tmdb";
 
-export default function ShowCard({ show, hasFullMovie = false }: { show: Movie; hasFullMovie?: boolean }) {
+export default function ShowCard({ show }: { show: Movie }) {
   return (
     <Link href={`/movies/${show.id}`} className="group block overflow-hidden rounded-lg border border-[#242529] bg-base-card transition-colors hover:border-accent/50">
       <article>
@@ -17,11 +17,6 @@ export default function ShowCard({ show, hasFullMovie = false }: { show: Movie; 
             />
           )}
           <div className="absolute inset-0 bg-black/10" />
-          {hasFullMovie ? (
-            <span className="absolute bottom-2.5 left-2.5 rounded bg-[#ff3d00] px-2 py-1 text-[10px] font-bold uppercase text-white">
-              Full movie
-            </span>
-          ) : null}
           <span className="absolute right-2.5 top-2.5 z-10 flex items-center gap-1 rounded-md bg-black/70 px-2 py-1 text-xs font-semibold text-white backdrop-blur">
             <Star size={11} className="text-accent fill-accent" />
             {show.rating.toFixed(1)}

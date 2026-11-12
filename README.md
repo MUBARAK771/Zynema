@@ -16,18 +16,21 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-## Mux playback
+## Movie sources and playback
 
-Add the Mux management credentials to `.env`:
+Configure TMDB on the server with either `TMDB_API_KEY` or `TMDB_API_READ_ACCESS_TOKEN`. The search results, movie details, cast and crew, trailers, and official watch-provider links continue to use TMDB.
 
-```env
-MUX_TOKEN_ID=your-mux-token-id
-MUX_TOKEN_SECRET=your-mux-token-secret
-```
+The movie details page looks up possible Internet Archive matches in the background. It requires a matching title and release year (including TMDB alternative titles) and an explicit, recognized license URL before enabling a file. Public Domain Mark, CC0, CC BY, and CC BY-SA licenses are supported; unrecognized, non-commercial, missing, or conflicting rights are excluded. Attribution is shown when required. An Internet Archive record is not by itself proof that a movie is authorized.
 
-TMDB must have a valid API key or API Read Access Token. If TMDB returns `401 Unauthorized`, create a new credential in your TMDB account and replace the old value in `.env`.
+Compatible MP4, WebM, Ogg, and browser-native HLS files can be played in the browser. HLS support varies by browser; unsupported formats display an error and remain downloadable only when their license permits it. Playback and downloads are revalidated against current Internet Archive metadata and use the original provider URL. Zynema does not proxy or store movie files.
 
-When creating each Mux asset, set its `passthrough` value to `tmdb:<movie-id>` (for example, `tmdb:550`). The movie page checks Mux for that value when the watch section loads. If a matching asset has a public playback ID, its Mux HLS stream plays in the site; otherwise the existing TMDB provider links are shown.
+No Internet Archive API key is required. Internet Archive availability, file quality, metadata, licensing assertions, CORS behavior, and download links are controlled by that service and may change. TMDB official provider links remain available as legal alternatives when no verified playable source is found.
+
+## TV schedule and My List
+
+The TV schedule is served through `/api/schedule` using TVMaze's country schedule for Nigeria. Use `date=YYYY-MM-DD` to select a date and `days=1` or `days=7` for a single day or a seven-day view. TVMaze only returns listings it has for the selected country, so an empty result means no entries were provided for those dates.
+
+Movies and TV shows can be added to My List from their detail pages. The list is stored in this browser's local storage; it does not require credentials, sync across devices, or send saved items to a server. Clearing this browser's site data will remove the list.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
