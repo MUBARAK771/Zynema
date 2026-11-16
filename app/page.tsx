@@ -73,11 +73,11 @@ export default async function Home() {
             <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">Movie listings are temporarily unavailable. Check your TMDB configuration or browse the catalog.</p>
             <Link href="/discover" className="mt-4 inline-flex items-center gap-2 bg-[#f04427] px-4 py-2.5 text-xs font-bold">Open discover <ArrowRight size={14} /></Link>
           </section>
-        )}
-
+        )}  
+       
         <section className="mt-8" aria-labelledby="recent-heading">
           <div className="mb-4 flex items-end justify-between border-b border-[#25262a] pb-3">
-            <div>
+            <div> 
               <h1 id="recent-heading" className="flex items-center gap-2 text-lg font-bold sm:text-xl"><Flame size={17} className="text-[#ff4b2b]" /> Recently added movies</h1>
               {/* <p className="mt-1 text-[11px] text-zinc-500">Popular picks, updated from TMDB</p> */}
             </div>
@@ -86,7 +86,7 @@ export default async function Home() {
           {recent.length ? (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
               {recent.map((movie) => <MoviePoster key={movie.id} movie={movie} />)}
-            </div>
+            </div>                                            
           ) : !featured ? null : (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
               {movies.map((movie) => <MoviePoster key={movie.id} movie={movie} />)}

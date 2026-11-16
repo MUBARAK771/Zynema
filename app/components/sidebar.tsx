@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Home,
   Compass,
@@ -10,7 +10,6 @@ import {
   Settings,
   HelpCircle,
   LogOut,
-  Tv,
 } from "lucide-react";
 
 const nav = [
@@ -22,6 +21,16 @@ const nav = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  async function handleLogout() {
+    try {
+      await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" });
+    } finally {
+      router.push(`${process.env.NEXT_PUBLIC_LOGIN_URL ?? "https://zynema-web.vercel.app"}`);
+      router.refresh();
+    }
+  }
 
   return (
     <aside className="hidden md:flex md:w-[220px] md:flex-col md:justify-between border-r border-[#242529] bg-[#1d1f23] px-3 py-4 shrink-0">
@@ -73,7 +82,11 @@ export default function Sidebar() {
           <HelpCircle size={18} />
           Help
         </Link>
-        <button className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-zinc-400 hover:bg-base-panel hover:text-white">
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-zinc-400 hover:bg-base-panel hover:text-white"
+        >
           <LogOut size={18} />
           Logout
         </button>
