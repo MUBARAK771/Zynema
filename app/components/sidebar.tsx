@@ -19,7 +19,7 @@ const nav = [
   { href: "/my-list", label: "My List", icon: Bookmark },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ loginUrl }: { loginUrl: string }) {
   const pathname = usePathname();
 
   async function handleLogout() {
@@ -31,9 +31,9 @@ export default function Sidebar() {
     } catch (error) {
       console.error("Logout failed", error);
     } finally {
-      const loginUrl = new URL(process.env.NEXT_PUBLIC_LOGIN_URL ?? "https://zynema-app.online");
-      loginUrl.searchParams.set("logout", "1");
-      window.location.assign(loginUrl.toString());
+      const loginDestination = new URL(loginUrl);
+      loginDestination.searchParams.set("logout", "1");
+      window.location.assign(loginDestination.toString());
     }
   }
 

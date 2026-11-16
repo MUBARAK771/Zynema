@@ -22,7 +22,7 @@ export async function POST(request: Request) {
   }
 
   const requestOrigin = request.headers.get("origin");
-  const expectedOrigin = new URL(process.env.NEXT_PUBLIC_LOGIN_URL ?? "https://zynema-app.online").origin;
+  const expectedOrigin = new URL(process.env.LOGIN_URL ?? "https://www.zynema-app.online").origin;
 
   let actualOrigin: string;
   try {

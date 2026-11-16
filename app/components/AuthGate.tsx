@@ -2,7 +2,13 @@
 
 import { useEffect, useState } from "react";
 
-export default function AuthGate({ children }: { children: React.ReactNode }) {
+export default function AuthGate({
+  children,
+  loginUrl,
+}: {
+  children: React.ReactNode;
+  loginUrl: string;
+}) {
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
 
@@ -27,8 +33,8 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
 
         setFailed(true);
         const next = encodeURIComponent(window.location.href);
-        const loginUrl = `${process.env.NEXT_PUBLIC_LOGIN_URL ?? "https://zynema-app.online"}?next=${next}`;
-        window.location.assign(loginUrl);
+        const destination = `${loginUrl}?next=${next}`;
+        window.location.assign(destination);
       } catch {
         if (!ignore) {
           setFailed(true);
@@ -40,7 +46,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
     return () => {
       ignore = true;
     };
-  }, []);
+  }, [loginUrl]);
 
   if (!ready) {
     return (
@@ -71,7 +77,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
             Please sign in again from the Zynema authentication portal to continue.
           </p>
           <a
-            href={`${process.env.NEXT_PUBLIC_LOGIN_URL ?? "https://zynema-app.online"}`}
+            href={loginUrl}
             className="mt-5 inline-flex rounded-full bg-[#ff3d00] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#ff551f]"
           >
             Return to sign in

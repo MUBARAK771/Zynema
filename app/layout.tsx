@@ -26,15 +26,17 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
+  const loginUrl = process.env.LOGIN_URL ?? "https://www.zynema-app.online";
+
   return (
     <html
       lang="en"
       className={`${poppins.variable} ${geistMono.variable} h-full antialiased`}
     >
      <body className="bg-base-bg text-zinc-100 antialiased font-sans">
-       <AuthGate>
+       <AuthGate loginUrl={loginUrl}>
          <div className="flex h-screen overflow-hidden">
-           <Sidebar />
+           <Sidebar loginUrl={loginUrl} />
            <div className="flex-1 flex flex-col overflow-hidden">
              <Header />
              <main className="flex-1 overflow-y-auto scrollbar-none">{children}</main>
