@@ -27,7 +27,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
 
         setFailed(true);
         const next = encodeURIComponent(window.location.href);
-        const loginUrl = `${process.env.NEXT_PUBLIC_LOGIN_URL ?? "https://zynema-web.vercel.app"}?next=${next}`;
+        const loginUrl = `${process.env.NEXT_PUBLIC_LOGIN_URL ?? "https://zynema-app.online"}?next=${next}`;
         window.location.assign(loginUrl);
       } catch {
         if (!ignore) {
@@ -71,7 +71,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
             Please sign in again from the Zynema authentication portal to continue.
           </p>
           <a
-            href={`${process.env.NEXT_PUBLIC_LOGIN_URL ?? "https://zynema-web.vercel.app"}`}
+            href={`${process.env.NEXT_PUBLIC_LOGIN_URL ?? "https://zynema-app.online"}`}
             className="mt-5 inline-flex rounded-full bg-[#ff3d00] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#ff551f]"
           >
             Return to sign in

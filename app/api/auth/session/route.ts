@@ -1,18 +1,32 @@
 import { NextResponse } from "next/server";
-import { getRequestUser } from "@/lib/auth";
+import {
+  DASHBOARD_SESSION_COOKIE,
+  getRequestSession,
+  serializeSessionCookie,
+} from "@/lib/auth";
 
 export async function GET() {
-  const user = await getRequestUser();
+  const verified = await getRequestSession();
 
-  if (!user) {
+  if (!verified) {
     return NextResponse.json({ authenticated: false }, { status: 401 });
   }
 
-  return NextResponse.json({
+  const response = NextResponse.json({
     authenticated: true,
     user: {
-      id: user.id,
-      email: user.email ?? null,
+      id: verified.user.id,
+      email: verified.user.email ?? null,
     },
   });
+
+  response.cookies.set(DASHBOARD_SESSION_COOKIE, serializeSessionCookie(verified.session), {
+    httpOnly: true,
+    secure: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 7,
+  });
+
+  return response;
 }

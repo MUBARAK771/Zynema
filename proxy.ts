@@ -1,5 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { DASHBOARD_SESSION_COOKIE, deserializeSessionCookie, getAuthenticatedUserFromSession } from "@/lib/auth";
+import {
+  DASHBOARD_SESSION_COOKIE,
+  deserializeSessionCookie,
+  serializeSessionCookie,
+  verifyDashboardSession,
+} from "@/lib/auth";
 
 export async function proxy(request: NextRequest) {
   const { pathname, origin, search } = request.nextUrl;
@@ -24,8 +29,8 @@ export async function proxy(request: NextRequest) {
     return response;
   }
 
-  const user = await getAuthenticatedUserFromSession(session);
-  if (!user) {
+  const verified = await verifyDashboardSession(session);
+  if (!verified) {
     const loginUrl = new URL(process.env.NEXT_PUBLIC_LOGIN_URL ?? "https://zynema-app.online/");
     loginUrl.searchParams.set("next", `${origin}${pathname}${search}`);
     const response = NextResponse.redirect(loginUrl);
@@ -33,7 +38,17 @@ export async function proxy(request: NextRequest) {
     return response;
   }
 
-  return NextResponse.next();
+  const response = NextResponse.next();
+  if (verified.session.access_token !== session.access_token || verified.session.refresh_token !== session.refresh_token) {
+    response.cookies.set(DASHBOARD_SESSION_COOKIE, serializeSessionCookie(verified.session), {
+      httpOnly: true,
+      secure: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7,
+    });
+  }
+  return response;
 }
 
 export const config = {

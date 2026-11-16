@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 import { clearDashboardSession } from "@/lib/auth";
 
 export async function POST() {
-  const loginUrl = new URL(process.env.NEXT_PUBLIC_LOGIN_URL ?? "https://zynema-web.vercel.app");
-  const response = NextResponse.redirect(loginUrl.toString());
+  const response = NextResponse.json({ signedOut: true });
   clearDashboardSession(response);
   return response;
 }

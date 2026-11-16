@@ -2,42 +2,71 @@ import { NextResponse } from "next/server";
 import {
   DASHBOARD_SESSION_COOKIE,
   getSupabaseConfig,
-  isValidHandoffPayload,
-  makeServerHandoffSignature,
+  isSafeDashboardPath,
   serializeSessionCookie,
 } from "@/lib/auth";
 
+function handoffError(message: string, status: number) {
+  return new NextResponse(`${message}\nPlease return to the sign-in page and try again.`, {
+    status,
+    headers: {
+      "Cache-Control": "no-store",
+      "Content-Type": "text/plain; charset=utf-8",
+    },
+  });
+}
+
 export async function POST(request: Request) {
+  if (!request.headers.get("content-type")?.startsWith("application/x-www-form-urlencoded")) {
+    return handoffError("This sign-in request has an unsupported format.", 415);
+  }
+
   const requestOrigin = request.headers.get("origin");
-  const expectedOrigin = process.env.NEXT_PUBLIC_LOGIN_URL ?? "https://zynema-web.vercel.app";
+  const expectedOrigin = new URL(process.env.NEXT_PUBLIC_LOGIN_URL ?? "https://zynema-app.online").origin;
 
-  if (requestOrigin && new URL(requestOrigin).origin !== new URL(expectedOrigin).origin) {
-    return NextResponse.json({ error: "Origin not allowed" }, { status: 403 });
-  }
-
-  let payload: unknown;
+  let actualOrigin: string;
   try {
-    payload = await request.json();
+    actualOrigin = requestOrigin ? new URL(requestOrigin).origin : "";
   } catch {
-    return NextResponse.json({ error: "A valid JSON payload is required." }, { status: 400 });
+    actualOrigin = "";
   }
 
-  if (!isValidHandoffPayload(payload)) {
-    return NextResponse.json({ error: "Invalid handoff payload." }, { status: 400 });
+  if (!actualOrigin || actualOrigin !== expectedOrigin) {
+    return handoffError("This sign-in request did not come from the approved Zynema login site.", 403);
   }
 
-  const signature = request.headers.get("x-zynema-handoff-signature");
-  const computedSignature = await makeServerHandoffSignature(payload);
+  let formData: FormData;
+  try {
+    formData = await request.formData();
+  } catch {
+    return handoffError("We could not read the sign-in request.", 400);
+  }
 
-  if (!signature || signature !== computedSignature) {
-    return NextResponse.json({ error: "Handoff signature rejected." }, { status: 401 });
+  const accessToken = formData.get("access_token");
+  const refreshToken = formData.get("refresh_token");
+  const userId = formData.get("user_id");
+  const expiresAt = Number(formData.get("expires_at"));
+  const requestedNext = formData.get("next");
+  const nextPath = isSafeDashboardPath(typeof requestedNext === "string" ? requestedNext : null);
+
+  if (
+    typeof accessToken !== "string" ||
+    typeof refreshToken !== "string" ||
+    typeof userId !== "string" ||
+    !accessToken ||
+    !refreshToken ||
+    !userId ||
+    !Number.isFinite(expiresAt) ||
+    expiresAt <= Math.floor(Date.now() / 1000)
+  ) {
+    return handoffError("Your sign-in session is invalid or expired.", 400);
   }
 
   const { url, anonKey } = getSupabaseConfig();
   const userResponse = await fetch(`${url.replace(/\/$/, "")}/auth/v1/user`, {
     method: "GET",
     headers: {
-      Authorization: `Bearer ${payload.access_token}`,
+      Authorization: `Bearer ${accessToken}`,
       apikey: anonKey,
       "Content-Type": "application/json",
     },
@@ -45,16 +74,22 @@ export async function POST(request: Request) {
   });
 
   if (!userResponse.ok) {
-    return NextResponse.json({ error: "Supabase session validation failed." }, { status: 401 });
+    return handoffError("We could not verify your Supabase session.", 401);
   }
 
   const user = (await userResponse.json()) as { id?: string };
-  if (!user.id || user.id !== payload.user_id) {
-    return NextResponse.json({ error: "User mismatch during handoff." }, { status: 401 });
+  if (!user.id || user.id !== userId) {
+    return handoffError("The signed-in account could not be verified.", 401);
   }
 
-  const response = NextResponse.json({ authenticated: true, user: { id: user.id } }, { status: 200 });
-  response.cookies.set(DASHBOARD_SESSION_COOKIE, serializeSessionCookie(payload), {
+  const session = {
+    access_token: accessToken,
+    refresh_token: refreshToken,
+    expires_at: expiresAt,
+    user_id: user.id,
+  };
+  const response = NextResponse.redirect(new URL(nextPath, request.url), 303);
+  response.cookies.set(DASHBOARD_SESSION_COOKIE, serializeSessionCookie(session), {
     httpOnly: true,
     secure: true,
     sameSite: "lax",

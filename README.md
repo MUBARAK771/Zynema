@@ -32,6 +32,14 @@ The TV schedule is served through `/api/schedule` using TVMaze's country schedul
 
 Movies and TV shows can be added to My List from their detail pages. The list is stored in this browser's local storage; it does not require credentials, sync across devices, or send saved items to a server. Clearing this browser's site data will remove the list.
 
+## Supabase dashboard authentication
+
+Set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `NEXT_PUBLIC_LOGIN_URL` in the dashboard deployment. `NEXT_PUBLIC_LOGIN_URL` must be the exact origin of the HTML login site (for example, `https://zynema-app.online`). Never put a Supabase service-role key in this app.
+
+After login, the HTML app submits a top-level HTTPS form POST to `https://zynema-snowy.vercel.app/api/auth/handoff`. The dashboard validates the submitted Supabase access token with Supabase Auth, compares the returned user ID, then sets a Secure, HttpOnly cookie on the dashboard origin and redirects to a safe dashboard path. The access and refresh tokens are in the POST body, never in a URL. The dashboard refreshes the session server-side and saves rotated tokens back to the cookie.
+
+The HTML app should submit `access_token`, `refresh_token`, `expires_at`, `user_id`, and a same-origin dashboard path in that form. Its browser request must include the login site's `Origin` header; the dashboard rejects other origins. The login page and the dashboard must both be served over HTTPS in production.
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.

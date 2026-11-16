@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   Home,
   Compass,
@@ -21,14 +21,19 @@ const nav = [
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const router = useRouter();
 
   async function handleLogout() {
     try {
-      await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" });
+      const response = await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" });
+      if (!response.ok) {
+        throw new Error("The dashboard session could not be cleared.");
+      }
+    } catch (error) {
+      console.error("Logout failed", error);
     } finally {
-      router.push(`${process.env.NEXT_PUBLIC_LOGIN_URL ?? "https://zynema-web.vercel.app"}`);
-      router.refresh();
+      const loginUrl = new URL(process.env.NEXT_PUBLIC_LOGIN_URL ?? "https://zynema-app.online");
+      loginUrl.searchParams.set("logout", "1");
+      window.location.assign(loginUrl.toString());
     }
   }
 
