@@ -17,7 +17,7 @@ export async function proxy(request: NextRequest) {
   const session = deserializeSessionCookie(sessionCookie);
 
   if (!session) {
-    const loginUrl = new URL(process.env.NEXT_PUBLIC_LOGIN_URL ?? "https://zynema-web.vercel.app");
+    const loginUrl = new URL(process.env.NEXT_PUBLIC_LOGIN_URL ?? "https://zynema-app.online/");
     loginUrl.searchParams.set("next", `${origin}${pathname}${search}`);
     const response = NextResponse.redirect(loginUrl);
     response.cookies.delete(DASHBOARD_SESSION_COOKIE);
@@ -26,7 +26,7 @@ export async function proxy(request: NextRequest) {
 
   const user = await getAuthenticatedUserFromSession(session);
   if (!user) {
-    const loginUrl = new URL(process.env.NEXT_PUBLIC_LOGIN_URL ?? "https://zynema-web.vercel.app");
+    const loginUrl = new URL(process.env.NEXT_PUBLIC_LOGIN_URL ?? "https://zynema-app.online/");
     loginUrl.searchParams.set("next", `${origin}${pathname}${search}`);
     const response = NextResponse.redirect(loginUrl);
     response.cookies.delete(DASHBOARD_SESSION_COOKIE);
