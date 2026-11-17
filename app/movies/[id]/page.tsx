@@ -76,7 +76,7 @@ export default async function MovieDetails({
               <span className="flex items-center gap-1"><Clock size={14} /> {movie.runtime}</span>
             </div>
             <p className="mt-5 text-sm leading-6 text-zinc-300">{movie.overview}</p>
-            <div className="flex flex-wrap gap-3">
+            <div className="mt-5 flex flex-wrap items-center gap-3">
               <WatchlistButton
                 item={{
                   type: "movie",
@@ -85,11 +85,12 @@ export default async function MovieDetails({
                   year: movie.year,
                   posterImage: movie.posterImage,
                 }}
+                className="inline-flex h-10 items-center gap-2 whitespace-nowrap rounded-full border border-zinc-600 bg-white/5 px-4 text-sm text-zinc-200 hover:border-zinc-400"
               />
               <WatchNowButton />
               <a
                 href="#available-to-watch"
-                className="mt-5 inline-flex w-fit items-center gap-2 rounded-full border border-zinc-600 px-5 py-2.5 text-xs font-semibold text-zinc-200 hover:border-white"
+                className="inline-flex h-10 w-fit items-center gap-2 whitespace-nowrap rounded-full border border-zinc-600 px-5 text-xs font-semibold text-zinc-200 hover:border-white"
               >
                 <Download size={15} /> Download Movie
               </a>

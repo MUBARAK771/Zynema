@@ -30,7 +30,7 @@ No Internet Archive API key is required. Internet Archive availability, file qua
 
 The TV schedule is served through `/api/schedule` using TVMaze's country schedule for Nigeria. Use `date=YYYY-MM-DD` to select a date and `days=1` or `days=7` for a single day or a seven-day view. TVMaze only returns listings it has for the selected country, so an empty result means no entries were provided for those dates.
 
-Movies and TV shows can be added to My List from their detail pages. The list is stored in this browser's local storage; it does not require credentials, sync across devices, or send saved items to a server. Clearing this browser's site data will remove the list.
+Movies and TV shows can be added to My List from their detail pages. Items are stored in Supabase per authenticated user and protected by Row Level Security. Apply `supabase/migrations/20261117120000_create_watchlist_items.sql` in the Supabase SQL Editor before using the database-backed list.
 
 ## Supabase dashboard authentication
 
@@ -39,6 +39,8 @@ Set `NEXT_SUPABASE_URL`, `NEXT_SUPABASE_ANON_KEY`, and the server-only `LOGIN_UR
 After login, the HTML app submits a top-level HTTPS form POST to `https://zynema-snowy.vercel.app/api/auth/handoff`. The dashboard validates the submitted Supabase access token with Supabase Auth, compares the returned user ID, then sets a Secure, HttpOnly cookie on the dashboard origin and redirects to a safe dashboard path. The access and refresh tokens are in the POST body, never in a URL. The dashboard refreshes the session server-side and saves rotated tokens back to the cookie.
 
 The HTML app should submit `access_token`, `refresh_token`, `expires_at`, `user_id`, and a same-origin dashboard path in that form. Its browser request must include the login site's `Origin` header; the dashboard rejects other origins. The login page and the dashboard must both be served over HTTPS in production.
+
+The watchlist API uses the user's verified access token and never a service-role key. `watchlist_items` policies require `auth.uid() = user_id` for reads and writes, so a client-supplied user ID cannot access another user's items.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 

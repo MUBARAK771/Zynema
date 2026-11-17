@@ -10,72 +10,54 @@ export type WatchlistItem = WatchlistEntry & {
   key: string;
 };
 
-const storageKey = "zynema:watchlist:v1";
 const changeEvent = "zynema:watchlist-change";
 
-function getKey(type: WatchlistEntry["type"], id: string) {
-  return `${type}:${id}`;
-}
+async function requestWatchlist(
+  method: "GET" | "POST" | "DELETE",
+  body?: Record<string, string | null>,
+): Promise<Response> {
+  const response = await fetch("/api/watchlist", {
+    method,
+    cache: "no-store",
+    credentials: "same-origin",
+    headers: body ? { "Content-Type": "application/json" } : undefined,
+    body: body ? JSON.stringify(body) : undefined,
+  });
 
-function isWatchlistItem(value: unknown): value is WatchlistItem {
-  if (!value || typeof value !== "object") return false;
-  const item = value as Partial<WatchlistItem>;
-  return (
-    (item.type === "movie" || item.type === "show") &&
-    typeof item.id === "string" &&
-    typeof item.title === "string" &&
-    typeof item.year === "string" &&
-    typeof item.key === "string" &&
-    (item.posterImage === undefined || typeof item.posterImage === "string") &&
-    item.key === getKey(item.type, item.id)
-  );
-}
-
-export function getWatchlist(): WatchlistItem[] {
-  const storedValue = window.localStorage.getItem(storageKey);
-  if (!storedValue) return [];
-
-  const parsed: unknown = JSON.parse(storedValue);
-  if (!Array.isArray(parsed) || !parsed.every(isWatchlistItem)) {
-    throw new Error("The saved list has invalid data. Clear this browser's saved list to continue.");
+  if (!response.ok) {
+    const result = (await response.json().catch(() => ({}))) as { error?: string };
+    throw new Error(result.error || "Your My List could not be updated.");
   }
 
-  return parsed;
+  return response;
 }
 
-function saveWatchlist(items: WatchlistItem[]) {
-  window.localStorage.setItem(storageKey, JSON.stringify(items));
+export async function getWatchlist(): Promise<WatchlistItem[]> {
+  const response = await requestWatchlist("GET");
+  const items = (await response.json()) as unknown;
+  if (!Array.isArray(items)) {
+    throw new Error("The server returned an invalid My List.");
+  }
+  return items as WatchlistItem[];
+}
+
+export async function addToWatchlist(entry: WatchlistEntry): Promise<void> {
+  await requestWatchlist("POST", {
+    type: entry.type,
+    id: entry.id,
+    title: entry.title,
+    year: entry.year,
+    posterImage: entry.posterImage ?? null,
+  });
   window.dispatchEvent(new Event(changeEvent));
 }
 
-export function isWatchlisted(type: WatchlistEntry["type"], id: string) {
-  const key = getKey(type, id);
-  return getWatchlist().some((item) => item.key === key);
-}
-
-export function toggleWatchlist(entry: WatchlistEntry) {
-  const key = getKey(entry.type, entry.id);
-  const current = getWatchlist();
-  const alreadySaved = current.some((item) => item.key === key);
-
-  saveWatchlist(
-    alreadySaved
-      ? current.filter((item) => item.key !== key)
-      : [{ ...entry, key }, ...current],
-  );
-
-  return !alreadySaved;
-}
-
-export function removeFromWatchlist(key: string) {
-  saveWatchlist(getWatchlist().filter((item) => item.key !== key));
+export async function removeFromWatchlist(type: WatchlistEntry["type"], id: string): Promise<void> {
+  await requestWatchlist("DELETE", { type, id });
+  window.dispatchEvent(new Event(changeEvent));
 }
 
 export function subscribeToWatchlist(callback: () => void) {
   window.addEventListener(changeEvent, callback);
-  window.addEventListener("storage", callback);
-  return () => {
-    window.removeEventListener(changeEvent, callback);
-    window.removeEventListener("storage", callback);
-  };
+  return () => window.removeEventListener(changeEvent, callback);
 }

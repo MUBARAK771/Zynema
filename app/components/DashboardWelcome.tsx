@@ -30,7 +30,7 @@ const availableFeatures = [
   {
     icon: BookmarkCheck,
     title: "Keep a My List",
-    description: "Save titles in this browser. Your list does not sync across devices yet.",
+    description: "Save titles to your account and access them on your signed-in devices.",
   },
 ];
 
@@ -126,7 +126,7 @@ export default function DashboardWelcome() {
         </ul>
 
         <p className="mt-5 text-xs leading-5 text-zinc-500">
-          More account features are coming. For now, your My List is stored only in this browser.
+          More account features are coming. Your My List is connected to your Zynema account.
         </p>
         <button
           type="button"

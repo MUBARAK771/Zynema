@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import { Bookmark, BookmarkCheck } from "lucide-react";
 import {
-  isWatchlisted,
+  addToWatchlist,
+  getWatchlist,
+  removeFromWatchlist,
   subscribeToWatchlist,
-  toggleWatchlist,
   type WatchlistEntry,
 } from "@/lib/watchlist";
 
@@ -18,31 +19,48 @@ export default function WatchlistButton({
 }) {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    const refresh = () => {
+    let active = true;
+    const refresh = async () => {
       try {
-        setSaved(isWatchlisted(item.type, item.id));
-        setError(null);
+        const items = await getWatchlist();
+        if (active) {
+          setSaved(items.some((savedItem) => savedItem.key === `${item.type}:${item.id}`));
+          setError(null);
+        }
       } catch (cause) {
-        setError(cause instanceof Error ? cause.message : "The saved list could not be read.");
+        if (active) {
+          setError(cause instanceof Error ? cause.message : "Your My List could not be loaded.");
+        }
       }
     };
 
-    const timer = window.setTimeout(refresh, 0);
-    const unsubscribe = subscribeToWatchlist(refresh);
+    void refresh();
+    const unsubscribe = subscribeToWatchlist(() => void refresh());
     return () => {
-      window.clearTimeout(timer);
+      active = false;
       unsubscribe();
     };
   }, [item.id, item.type]);
 
-  function handleClick() {
+  async function handleClick() {
+    if (saving) return;
+    setSaving(true);
     try {
-      setSaved(toggleWatchlist(item));
+      if (saved) {
+        await removeFromWatchlist(item.type, item.id);
+        setSaved(false);
+      } else {
+        await addToWatchlist(item);
+        setSaved(true);
+      }
       setError(null);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "The item could not be saved.");
+      setError(cause instanceof Error ? cause.message : "Your My List could not be updated.");
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -52,6 +70,8 @@ export default function WatchlistButton({
         type="button"
         onClick={handleClick}
         aria-pressed={saved}
+        disabled={saving}
+        aria-busy={saving}
         className={className || "inline-flex items-center gap-2 rounded-full border border-zinc-600 bg-white/5 px-4 py-3 text-sm text-zinc-200 hover:border-zinc-400"}
       >
         {saved ? <BookmarkCheck size={16} /> : <Bookmark size={16} />}

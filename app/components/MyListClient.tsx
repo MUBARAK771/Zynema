@@ -20,28 +20,34 @@ export default function MyListClient() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const refresh = () => {
+    let active = true;
+    const refresh = async () => {
       try {
-        setItems(getWatchlist());
-        setError(null);
+        const savedItems = await getWatchlist();
+        if (active) {
+          setItems(savedItems);
+          setError(null);
+        }
       } catch (cause) {
-        setError(cause instanceof Error ? cause.message : "Your saved list could not be loaded.");
+        if (active) {
+          setError(cause instanceof Error ? cause.message : "Your saved list could not be loaded.");
+        }
       } finally {
-        setReady(true);
+        if (active) setReady(true);
       }
     };
 
-    const timer = window.setTimeout(refresh, 0);
-    const unsubscribe = subscribeToWatchlist(refresh);
+    void refresh();
+    const unsubscribe = subscribeToWatchlist(() => void refresh());
     return () => {
-      window.clearTimeout(timer);
+      active = false;
       unsubscribe();
     };
   }, []);
 
-  function removeItem(key: string) {
+  async function removeItem(item: WatchlistItem) {
     try {
-      removeFromWatchlist(key);
+      await removeFromWatchlist(item.type, item.id);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "The item could not be removed.");
     }
@@ -59,12 +65,12 @@ export default function MyListClient() {
         </p>
       ) : null}
 
-      {items.length === 0 ? (
+      {items.length === 0 && !error ? (
         <div className="rounded-xl border border-[#242529] bg-[#17191c] p-8 text-center">
           <BookmarkX className="mx-auto text-zinc-500" size={28} />
           <h2 className="mt-3 text-base font-semibold text-white">Your list is empty</h2>
           <p className="mt-2 text-sm text-zinc-400">
-            Add a movie or show from its details page to keep it here on this browser.
+            Add a movie or show from its details page to keep it in your account.
           </p>
           <Link href="/discover" className="mt-5 inline-flex rounded-full bg-[#ff3d00] px-4 py-2 text-sm font-semibold text-white hover:bg-[#ff551f]">
             Discover movies
@@ -96,7 +102,7 @@ export default function MyListClient() {
                 <div className="border-t border-[#242529] p-3">
                   <button
                     type="button"
-                    onClick={() => removeItem(item.key)}
+                    onClick={() => void removeItem(item)}
                     className="text-xs text-zinc-400 hover:text-white"
                   >
                     Remove from My List
@@ -107,7 +113,7 @@ export default function MyListClient() {
           </div>
         </>
       )}
-      <p className="mt-5 text-xs text-zinc-600">This list is stored only in this browser and does not sync across devices.</p>
+      <p className="mt-5 text-xs text-zinc-600">Your list is saved to your account and is available when you sign in on another device.</p>
     </div>
   );
 }

@@ -14,7 +14,7 @@ export default function WatchNowButton() {
     <button
       type="button"
       onClick={handleClick}
-      className="mt-5 inline-flex w-fit items-center gap-2 rounded-full bg-[#ff3d00] px-5 py-2.5 text-xs font-semibold text-white hover:bg-[#ff551f]"
+      className="inline-flex h-10 w-fit items-center gap-2 whitespace-nowrap rounded-full bg-[#ff3d00] px-5 text-xs font-semibold text-white hover:bg-[#ff551f]"
     >
       <Play size={15} /> Watch Now
     </button>

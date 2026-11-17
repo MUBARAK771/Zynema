@@ -10,7 +10,7 @@ export default function MyListPage() {
       </div>
       <h1 className="text-[26px] font-bold uppercase">My List</h1>
       <p className="mt-1 text-sm text-gray-400 xl:max-w-[54%]">
-        Save movies and TV shows to revisit later. Your list is stored in this browser.
+        Save movies and TV shows to your account and revisit them on your signed-in devices.
       </p>
       <MyListClient />
     </main>
