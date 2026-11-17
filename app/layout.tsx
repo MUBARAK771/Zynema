@@ -34,7 +34,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${poppins.variable} ${geistMono.variable} h-full antialiased`}
     >
-     <body className="bg-base-bg text-zinc-100 antialiased font-sans">
+     <body className="bg-[#0b0c0e] text-zinc-100 antialiased font-sans">
        <AuthGate loginUrl={loginUrl}>
          <div className="flex h-screen overflow-hidden">
            <Sidebar loginUrl={loginUrl} />
