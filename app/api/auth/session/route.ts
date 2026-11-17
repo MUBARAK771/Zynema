@@ -17,6 +17,7 @@ export async function GET() {
     user: {
       id: verified.user.id,
       email: verified.user.email ?? null,
+      name: verified.user.name ?? null,
     },
   });
 

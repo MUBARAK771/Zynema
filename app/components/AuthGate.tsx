@@ -1,6 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
+
+export type DashboardUser = {
+  id: string;
+  email: string | null;
+  name: string | null;
+};
+
+const DashboardUserContext = createContext<DashboardUser | null>(null);
+
+export function useDashboardUser() {
+  return useContext(DashboardUserContext);
+}
 
 export default function AuthGate({
   children,
@@ -11,6 +23,7 @@ export default function AuthGate({
 }) {
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [user, setUser] = useState<DashboardUser | null>(null);
 
   useEffect(() => {
     let ignore = false;
@@ -27,17 +40,27 @@ export default function AuthGate({
         }
 
         if (response.ok) {
+          const result = (await response.json()) as {
+            authenticated?: boolean;
+            user?: DashboardUser;
+          };
+          if (!result.authenticated || !result.user?.id) {
+            throw new Error("The session response did not contain a verified user.");
+          }
+          setUser(result.user);
           setReady(true);
           return;
         }
 
         setFailed(true);
+        setReady(true);
         const next = encodeURIComponent(window.location.href);
         const destination = `${loginUrl}?next=${next}`;
         window.location.assign(destination);
       } catch {
         if (!ignore) {
           setFailed(true);
+          setReady(true);
         }
       }
     }
@@ -87,5 +110,9 @@ export default function AuthGate({
     );
   }
 
-  return <>{children}</>;
+  return (
+    <DashboardUserContext.Provider value={user}>
+      {children}
+    </DashboardUserContext.Provider>
+  );
 }

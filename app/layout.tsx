@@ -4,6 +4,7 @@ import "./globals.css";
 import Header from "./components/Header";
 import Sidebar from "./components/sidebar";
 import AuthGate from "./components/AuthGate";
+import DashboardWelcome from "./components/DashboardWelcome";
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -39,6 +40,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
            <Sidebar loginUrl={loginUrl} />
            <div className="flex-1 flex flex-col overflow-hidden">
              <Header />
+             <DashboardWelcome />
              <main className="flex-1 overflow-y-auto scrollbar-none">{children}</main>
            </div>
           </div>

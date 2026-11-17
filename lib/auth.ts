@@ -101,7 +101,10 @@ export async function refreshSupabaseSession(session: DashboardSession): Promise
 
 export async function verifyDashboardSession(
   session: DashboardSession,
-): Promise<{ session: DashboardSession; user: { id: string; email?: string | null } } | null> {
+): Promise<{
+  session: DashboardSession;
+  user: { id: string; email?: string | null; name?: string | null };
+} | null> {
   const { url, anonKey } = getSupabaseConfig();
   let activeSession = session;
 
@@ -127,14 +130,24 @@ export async function verifyDashboardSession(
     return null;
   }
 
-  const user = (await response.json()) as { id?: string; email?: string | null };
+  const user = (await response.json()) as {
+    id?: string;
+    email?: string | null;
+    user_metadata?: Record<string, unknown>;
+  };
   if (!user.id || user.id !== activeSession.user_id) {
     return null;
   }
 
+  const metadata = user.user_metadata ?? {};
+  const name = [metadata.full_name, metadata.name, metadata.display_name, metadata.given_name]
+    .find((value): value is string => typeof value === "string" && value.trim().length > 0)
+    ?.trim()
+    .slice(0, 80) ?? null;
+
   return {
     session: activeSession,
-    user: { id: user.id, email: user.email ?? null },
+    user: { id: user.id, email: user.email ?? null, name },
   };
 }
 

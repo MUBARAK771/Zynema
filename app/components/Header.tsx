@@ -4,6 +4,7 @@ import { Search, Bell, ChevronDown } from "lucide-react";
 import { useDebouncedCallback } from "use-debounce";
 import { useRouter } from "next/navigation";
 import type { Movie } from "@/lib/tmdb";
+import { useDashboardUser } from "@/app/components/AuthGate";
 
 interface TVMazeShow {
   show: {
@@ -20,11 +21,17 @@ type SearchResults = {
 
 export default function Header() {
   const router = useRouter();
+  const user = useDashboardUser();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResults>({ shows: [], movies: [] });
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const displayName = user?.name || user?.email?.split("@")[0] || "Zynema user";
+  const nameParts = displayName.trim().split(/\s+/);
+  const initials = nameParts.length > 1
+    ? `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`.toUpperCase()
+    : displayName.slice(0, 2).toUpperCase();
 
   const handleSearch = useDebouncedCallback(async (term: string) => {
     if (!term) {
@@ -140,10 +147,19 @@ export default function Header() {
           <Bell size={20} />
           <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-accent" />
         </button>
-        <button className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-linear-to-br from-amber-300 to-orange-500" />
+        <div
+          className="flex min-w-0 items-center gap-2"
+          title={user?.email ?? displayName}
+          aria-label={`Signed in as ${displayName}`}
+        >
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-amber-300 to-orange-500 text-xs font-bold text-[#21140b]">
+            {initials}
+          </div>
+          <span className="hidden max-w-36 truncate text-xs font-medium text-zinc-200 sm:inline">
+            {displayName}
+          </span>
           <ChevronDown size={16} className="text-muted" />
-        </button>
+        </div>
       </div>
     </header>
   );
