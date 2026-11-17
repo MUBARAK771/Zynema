@@ -18,9 +18,12 @@ function requireEnv(name: string, value: string | undefined): string {
 }
 
 export function getSupabaseConfig() {
+  const url = process.env.NEXT_SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_SUPABASE_ANON_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
   return {
-    url: requireEnv("NEXT_PUBLIC_SUPABASE_URL", process.env.NEXT_PUBLIC_SUPABASE_URL),
-    anonKey: requireEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
+    url: requireEnv("NEXT_SUPABASE_URL", url),
+    anonKey: requireEnv("NEXT_SUPABASE_ANON_KEY", anonKey),
   };
 }
 
