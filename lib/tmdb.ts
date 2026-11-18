@@ -64,23 +64,6 @@ type TMDBMovieDetails = TMDBMovie & {
   genres?: { id: number; name: string }[];
 };
 
-type TMDBProvider = {
-  provider_name: string;
-  logo_path: string | null;
-};
-
-type TMDBWatchProvidersResponse = {
-  results?: Record<
-    string,
-    {
-      link?: string;
-      flatrate?: TMDBProvider[];
-      rent?: TMDBProvider[];
-      buy?: TMDBProvider[];
-    }
-  >;
-};
-
 type TMDBVideo = {
   key: string;
   name: string;
@@ -315,8 +298,6 @@ export async function getLatestMovie(): Promise<Movie | null> {
 
 export async function getMovie(id: string, language = "en-US"): Promise<{
   movie: Movie & { overview: string; backdropImage?: string };
-  providers: WatchProvider[];
-  watchGuideUrl?: string;
   trailer?: MovieTrailer;
   cast: MovieCastMember[];
   crew: MovieCrewMember[];
@@ -328,8 +309,6 @@ export async function getMovie(id: string, language = "en-US"): Promise<{
   addTMDBAuth(movieUrl, auth);
   movieUrl.searchParams.set("language", language);
 
-  const providerUrl = new URL(`https://api.themoviedb.org/3/movie/${encodeURIComponent(id)}/watch/providers`);
-  addTMDBAuth(providerUrl, auth);
   const videosUrl = new URL(`https://api.themoviedb.org/3/movie/${encodeURIComponent(id)}/videos`);
   addTMDBAuth(videosUrl, auth);
   videosUrl.searchParams.set("language", language);
@@ -343,13 +322,11 @@ export async function getMovie(id: string, language = "en-US"): Promise<{
 
   const [
     movieResponse,
-    providerData,
     videosData,
     creditsData,
     alternativeTitlesData,
   ] = await Promise.all([
     fetchTMDB(movieUrl, { ...auth, next: { revalidate: 3600 } }),
-    fetchOptionalTMDB<TMDBWatchProvidersResponse>(providerUrl, auth, "Watch providers"),
     fetchOptionalTMDB<TMDBVideosResponse>(videosUrl, auth, "Movie trailers"),
     fetchOptionalTMDB<TMDBCreditsResponse>(creditsUrl, auth, "Movie cast and crew"),
     fetchOptionalTMDB<TMDBAlternativeTitlesResponse>(
@@ -363,26 +340,12 @@ export async function getMovie(id: string, language = "en-US"): Promise<{
   if (!movieResponse.ok) throw new Error(`TMDB returned ${movieResponse.status} ${movieResponse.statusText}`);
 
   const movie = (await movieResponse.json()) as TMDBMovieDetails;
-  const availableProviderData: TMDBWatchProvidersResponse = providerData ?? { results: {} };
   const availableVideoData: TMDBVideosResponse = videosData ?? { results: [] };
   const availableCreditData: TMDBCreditsResponse = creditsData ?? {};
   const availableAlternativeTitles: TMDBAlternativeTitlesResponse =
     alternativeTitlesData ?? {};
   const trailers = (availableVideoData.results ?? []).filter((video) => video.site === "YouTube" && video.type === "Trailer");
   const selectedTrailer = trailers.find((video) => video.official) ?? trailers[0];
-  const region = availableProviderData.results?.US;
-  const uniqueProviders = new Map<string, WatchProvider>();
-
-  for (const provider of [...(region?.flatrate ?? []), ...(region?.rent ?? []), ...(region?.buy ?? [])]) {
-    if (region?.link && !uniqueProviders.has(provider.provider_name)) {
-      uniqueProviders.set(provider.provider_name, {
-        name: provider.provider_name,
-        logoPath: provider.logo_path,
-        link: region.link,
-      });
-    }
-  }
-
   return {
     movie: {
       id: movie.id,
@@ -396,8 +359,6 @@ export async function getMovie(id: string, language = "en-US"): Promise<{
       posterImage: movie.poster_path ? `https://image.tmdb.org/t/p/w780${movie.poster_path}` : undefined,
       backdropImage: movie.backdrop_path ? `https://image.tmdb.org/t/p/w1280${movie.backdrop_path}` : undefined,
     },
-    providers: [...uniqueProviders.values()],
-    watchGuideUrl: region?.link,
     trailer: selectedTrailer
       ? { key: selectedTrailer.key, name: selectedTrailer.name, site: "YouTube" }
       : undefined,

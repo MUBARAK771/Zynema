@@ -1,9 +1,7 @@
-import { CalendarDays, Clock, Download, Star } from "lucide-react";
+import { CalendarDays, Clock, Star } from "lucide-react";
 import Link from "next/link";
 import { getMovie } from "@/lib/tmdb";
 import MovieTrailerPlayer from "@/app/components/MovieTrailerPlayer";
-import MovieSources from "@/app/components/MovieSources";
-import WatchNowButton from "@/app/components/WatchNowButton";
 import WatchlistButton from "@/app/components/WatchlistButton";
 import { getRequestSession } from "@/lib/auth";
 
@@ -39,7 +37,7 @@ export default async function MovieDetails({
     );
   }
 
-  const { movie, providers, watchGuideUrl, trailer, cast, crew } = result;
+  const { movie, trailer, cast, crew } = result;
 
   return (
     <main className="min-h-full bg-[#0d0e10] pb-10 text-zinc-100">
@@ -89,14 +87,11 @@ export default async function MovieDetails({
                 }}
                 className="inline-flex h-10 items-center gap-2 whitespace-nowrap rounded-full border border-zinc-600 bg-white/5 px-4 text-sm text-zinc-200 hover:border-zinc-400"
               />
-              <WatchNowButton />
-              <a
-                href="#available-to-watch"
-                className="inline-flex h-10 w-fit items-center gap-2 whitespace-nowrap rounded-full border border-zinc-600 px-5 text-xs font-semibold text-zinc-200 hover:border-white"
-              >
-                <Download size={15} /> Download Movie
-              </a>
             </div>
+            <p className="mt-4 rounded-lg border border-[#34363a] bg-black/20 px-3 py-2.5 text-xs leading-5 text-zinc-400">
+              <span className="font-semibold text-[#ff9a7f]">Coming soon:</span>{" "}
+              Full movie streaming and downloads are not available yet.
+            </p>
           </div>
           </div>
         </div>
@@ -105,7 +100,7 @@ export default async function MovieDetails({
       <section className="mx-auto grid max-w-6xl gap-8 px-5 py-8 sm:px-8 lg:grid-cols-[1fr_320px]">
         <div className="space-y-8">
           {trailer ? (
-            <div id="watch">
+            <div id="trailer">
               <h2 className="text-xl font-bold">Official trailer</h2>
               <p className="mt-1 text-sm text-zinc-500">
                 This is a trailer, not the full movie.
@@ -116,14 +111,6 @@ export default async function MovieDetails({
               </div>
             </div>
           ) : null}
-
-          <MovieSources
-            movieId={movie.id}
-            title={movie.title}
-            poster={movie.backdropImage || movie.posterImage}
-            providers={providers}
-            watchGuideUrl={watchGuideUrl}
-          />
 
           {cast.length > 0 || crew.length > 0 ? (
             <section aria-labelledby="cast-crew-title">
@@ -159,10 +146,7 @@ export default async function MovieDetails({
         <aside className="rounded-lg border border-[#2b2d31] bg-[#17191c] p-5">
           <h2 className="text-sm font-semibold uppercase tracking-[0.12em] text-zinc-400">About this movie</h2>
           <p className="mt-3 text-sm leading-6 text-zinc-300">{movie.genre}</p>
-          <p className="mt-3 text-xs leading-5 text-zinc-500">Movie metadata and official viewing options are provided by TMDB.</p>
-          <p className="mt-3 text-xs leading-5 text-zinc-500">
-            Internet Archive files are enabled only when a recognized public-domain or open license is listed.
-          </p>
+          <p className="mt-3 text-xs leading-5 text-zinc-500">Movie metadata is provided by TMDB.</p>
         </aside>
       </section>
     </main>
