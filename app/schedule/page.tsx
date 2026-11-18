@@ -11,8 +11,8 @@ export default function SchedulePage() {
       </div>
       <h1 className="text-[26px] font-bold uppercase">TV Schedule</h1>
       <p className="mt-1 text-sm text-gray-400">
-        Browse TV listings from TVMaze for Nigeria. Listings depend on the shows and broadcasters
-        covered by TVMaze.
+        Browse upcoming programmes across DStv Nigeria channels. Search by channel name or number
+        to find what is on.
       </p>
       <ScheduleClient initialDate={getNigeriaDate()} />
     </main>

@@ -1,28 +1,25 @@
-export type ScheduleEpisode = {
-  id: number;
+export type ScheduleProgram = {
+  id: string;
+  title: string;
+  startTime: string;
+  endTime: string;
+};
+
+export type ScheduleChannel = {
+  number: string;
   name: string;
-  season: number;
-  number: number;
-  airdate: string;
-  airtime: string;
-  runtime: number | null;
-  summary: string | null;
-  image: string | null;
-  show: {
-    id: number;
-    name: string;
-    image: string | null;
-    network: string | null;
-  };
+  programmes: ScheduleProgram[];
 };
 
 export type ScheduleDay = {
   date: string;
-  episodes: ScheduleEpisode[];
+  channels: ScheduleChannel[];
+  error?: string;
 };
 
 export type ScheduleResponse = {
   country: "NG";
+  provider: "DStv";
   days: ScheduleDay[];
 };
 

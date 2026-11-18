@@ -1,80 +1,104 @@
 import { NextResponse } from "next/server";
-import type { ScheduleDay, ScheduleEpisode } from "@/lib/tv-schedule";
+import type { ScheduleChannel, ScheduleDay, ScheduleProgram } from "@/lib/tv-schedule";
 import { addScheduleDays, getNigeriaDate, isValidScheduleDate } from "@/lib/tv-schedule";
 
-type TVMazeEpisode = {
-  id: number;
-  name: string;
-  season: number;
-  number: number;
-  airdate: string;
-  airtime: string;
-  runtime: number | null;
-  summary: string | null;
-  image: { medium?: string; original?: string } | null;
-  show?: {
-    id: number;
-    name: string;
-    image: { medium?: string; original?: string } | null;
-    network: { name?: string } | null;
-    webChannel: { name?: string } | null;
-  };
+type DstvProgram = {
+  Id?: unknown;
+  StartTime?: unknown;
+  EndTime?: unknown;
+  Title?: unknown;
 };
 
-const tvMazeBaseUrl = (process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://api.tvmaze.com")
-  .trim()
-  .replace(/\/$/, "");
+type DstvChannel = {
+  Number?: unknown;
+  Name?: unknown;
+  Programmes?: unknown;
+};
 
-function mapEpisode(episode: TVMazeEpisode): ScheduleEpisode | null {
+const dstvScheduleUrl = "https://www.dstv.com/umbraco/api/TvGuide/GetProgrammes";
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isValidLocalDateTime(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(value) &&
+    Number.isFinite(new Date(`${value}+01:00`).getTime())
+  );
+}
+
+function mapProgram(program: DstvProgram, channelNumber: string): ScheduleProgram | null {
   if (
-    !episode.show ||
-    !Number.isSafeInteger(episode.id) ||
-    !Number.isSafeInteger(episode.show.id) ||
-    !episode.show.name
+    typeof program.Title !== "string" ||
+    !program.Title ||
+    !isValidLocalDateTime(program.StartTime) ||
+    !isValidLocalDateTime(program.EndTime) ||
+    program.EndTime <= program.StartTime
   ) {
     return null;
   }
 
   return {
-    id: episode.id,
-    name: episode.name || "Untitled episode",
-    season: episode.season,
-    number: episode.number,
-    airdate: episode.airdate,
-    airtime: episode.airtime || "",
-    runtime: episode.runtime,
-    summary: episode.summary,
-    image: episode.image?.original || episode.image?.medium || null,
-    show: {
-      id: episode.show.id,
-      name: episode.show.name,
-      image: episode.show.image?.original || episode.show.image?.medium || null,
-      network:
-        episode.show.network?.name ||
-        episode.show.webChannel?.name ||
-        null,
-    },
+    id:
+      typeof program.Id === "string" && program.Id
+        ? program.Id
+        : `${channelNumber}-${program.StartTime}-${program.Title}`,
+    title: program.Title,
+    startTime: program.StartTime,
+    endTime: program.EndTime,
   };
 }
 
 async function getScheduleDay(date: string): Promise<ScheduleDay> {
-  const url = new URL(`${tvMazeBaseUrl}/schedule`);
-  url.searchParams.set("country", "NG");
-  url.searchParams.set("date", date);
+  const url = new URL(dstvScheduleUrl);
+  url.searchParams.set("d", date);
+  url.searchParams.set("country", "nga");
 
   const response = await fetch(url, { next: { revalidate: 900 } });
   if (!response.ok) {
-    throw new Error(`TVMaze schedule request failed with status ${response.status}.`);
+    throw new Error(`DStv Nigeria guide request failed with status ${response.status}.`);
   }
 
-  const episodes = (await response.json()) as TVMazeEpisode[];
-  return {
-    date,
-    episodes: episodes.flatMap((episode) => {
-      const mapped = mapEpisode(episode);
-      return mapped ? [mapped] : [];
-    }),
-  };
+  const payload: unknown = await response.json();
+  if (!isRecord(payload) || !Array.isArray(payload.Channels)) {
+    throw new Error("DStv returned an invalid Nigeria TV guide response.");
+  }
+
+  const startOfDay = `${date}T00:00:00`;
+  const startOfNextDay = `${addScheduleDays(date, 1)}T00:00:00`;
+  const channels = payload.Channels.flatMap((entry: unknown): ScheduleChannel[] => {
+    if (!isRecord(entry)) return [];
+    const channel = entry as DstvChannel;
+    if (
+      (typeof channel.Number !== "string" && typeof channel.Number !== "number") ||
+      typeof channel.Name !== "string" ||
+      !Array.isArray(channel.Programmes)
+    ) {
+      return [];
+    }
+
+    const number = String(channel.Number);
+    const programmes = channel.Programmes.flatMap((item: unknown) => {
+      if (!isRecord(item)) return [];
+      const program = mapProgram(item as DstvProgram, number);
+      if (
+        !program ||
+        program.endTime <= startOfDay ||
+        program.startTime >= startOfNextDay
+      ) {
+        return [];
+      }
+      return [program];
+    });
+
+    if (programmes.length === 0) return [];
+    programmes.sort((a, b) => a.startTime.localeCompare(b.startTime));
+    return [{ number, name: channel.Name, programmes }];
+  });
+
+  return { date, channels };
 }
 
 export async function GET(request: Request) {
@@ -91,15 +115,35 @@ export async function GET(request: Request) {
 
   try {
     const dates = Array.from({ length: days }, (_, index) => addScheduleDays(date, index));
-    const scheduleDays = await Promise.all(dates.map(getScheduleDay));
+    const results = await Promise.allSettled(dates.map(getScheduleDay));
+    const availableDays = results.filter(
+      (result): result is PromiseFulfilledResult<ScheduleDay> => result.status === "fulfilled",
+    );
+    if (availableDays.length === 0) {
+      const failure = results.find(
+        (result): result is PromiseRejectedResult => result.status === "rejected",
+      );
+      throw failure?.reason ?? new Error("DStv returned no schedule data.");
+    }
+
+    const scheduleDays = results.map((result, index): ScheduleDay => {
+      if (result.status === "fulfilled") return result.value;
+      console.error(`DStv Nigeria schedule unavailable for ${dates[index]}`, result.reason);
+      return {
+        date: dates[index],
+        channels: [],
+        error: "Listings are temporarily unavailable for this date.",
+      };
+    });
+
     return NextResponse.json(
-      { country: "NG", days: scheduleDays },
+      { country: "NG", provider: "DStv", days: scheduleDays },
       { headers: { "Cache-Control": "public, s-maxage=900, stale-while-revalidate=300" } },
     );
   } catch (error) {
-    console.error("TVMaze schedule lookup failed", error);
+    console.error("DStv Nigeria schedule lookup failed", error);
     return NextResponse.json(
-      { error: "The TV schedule is temporarily unavailable. Please try again later." },
+      { error: "The Nigeria TV schedule is temporarily unavailable. Please try again later." },
       { status: 502 },
     );
   }
