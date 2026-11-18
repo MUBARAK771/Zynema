@@ -3,15 +3,20 @@ import Link from "next/link";
 export default function Pagination({
   currentPage,
   totalPages,
+  query = {},
 }: {
   currentPage: number;
   totalPages: number;
+  query?: Record<string, string>;
 }) {
   const pages = Array.from(
     new Set([1, currentPage - 1, currentPage, currentPage + 1, totalPages]),
   ).filter((page) => page >= 1 && page <= totalPages);
 
-  const pageLink = (page: number) => `/discover?page=${page}`;
+  const pageLink = (page: number) => {
+    const params = new URLSearchParams({ ...query, page: String(page) });
+    return `/discover?${params.toString()}`;
+  };
 
   return (
     <div className="flex items-center justify-center gap-2 pt-10 pb-4 border-t border-[#242529] mt-8">

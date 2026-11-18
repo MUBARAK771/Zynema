@@ -11,6 +11,11 @@ export type Movie = {
   overview?: string;
 };
 
+export type TMDBLocale = {
+  code: string;
+  name: string;
+};
+
 export type WatchProvider = {
   name: string;
   logoPath: string | null;
@@ -187,15 +192,43 @@ function getGenreNames(movie: TMDBMovie & { genres?: { id: number; name: string 
     .join(", ");
 }
 
-export async function getMovies(page = 1): Promise<{ movies: Movie[]; totalPages: number }> {
+function mapMovie(movie: TMDBMovie): Movie {
+  return {
+    id: movie.id,
+    title: movie.title,
+    genre: getGenreNames(movie) || "Movie",
+    year: movie.release_date?.slice(0, 4) || "—",
+    releaseDate: movie.release_date || undefined,
+    runtime: "Movie",
+    rating: movie.vote_average,
+    overview: movie.overview,
+    posterImage: movie.poster_path
+      ? `https://image.tmdb.org/t/p/w780${movie.poster_path}`
+      : undefined,
+    backdropImage: movie.backdrop_path
+      ? `https://image.tmdb.org/t/p/w1280${movie.backdrop_path}`
+      : undefined,
+  };
+}
+
+async function discoverMovies(options: {
+  page: number;
+  language: string;
+  country?: "NG" | "IN";
+  originalLanguage?: string;
+}): Promise<{ movies: Movie[]; totalPages: number }> {
   const auth = getTMDBAuth();
 
   const url = new URL("https://api.themoviedb.org/3/discover/movie");
   addTMDBAuth(url, auth);
-  url.searchParams.set("language", "en-US");
+  url.searchParams.set("language", options.language);
   url.searchParams.set("sort_by", "popularity.desc");
   url.searchParams.set("include_adult", "false");
-  url.searchParams.set("page", String(page));
+  url.searchParams.set("page", String(options.page));
+  if (options.country) url.searchParams.set("with_origin_country", options.country);
+  if (options.originalLanguage) {
+    url.searchParams.set("with_original_language", options.originalLanguage);
+  }
 
   const response = await fetchTMDB(url, {
     ...auth,
@@ -209,24 +242,45 @@ export async function getMovies(page = 1): Promise<{ movies: Movie[]; totalPages
   const data = (await response.json()) as TMDBResponse;
 
   return {
-    movies: data.results.map((movie) => ({
-      id: movie.id,
-      title: movie.title,
-      genre: getGenreNames(movie) || "Movie",
-      year: movie.release_date?.slice(0, 4) || "—",
-      releaseDate: movie.release_date || undefined,
-      runtime: "Movie",
-      rating: movie.vote_average,
-      overview: undefined,
-      posterImage: movie.poster_path
-        ? `https://image.tmdb.org/t/p/w780${movie.poster_path}`
-        : undefined,
-      backdropImage: movie.backdrop_path
-        ? `https://image.tmdb.org/t/p/w1280${movie.backdrop_path}`
-        : undefined,
-    })),
+    movies: data.results.map(mapMovie),
     totalPages: Math.min(data.total_pages, 500),
   };
+}
+
+export function getMovies(page = 1, language = "en-US") {
+  return discoverMovies({ page, language });
+}
+
+export function getRegionalMovies(
+  country: "NG" | "IN",
+  page = 1,
+  language = "en-US",
+  originalLanguage?: string,
+) {
+  return discoverMovies({ country, page, language, originalLanguage });
+}
+
+export async function getTMDBLocales(): Promise<TMDBLocale[]> {
+  const auth = getTMDBAuth();
+  const url = new URL("https://api.themoviedb.org/3/configuration/primary_translations");
+  addTMDBAuth(url, auth);
+
+  const response = await fetchTMDB(url, { ...auth, next: { revalidate: 86400 } });
+  if (!response.ok) {
+    throw new Error(`TMDB returned ${response.status} ${response.statusText}`);
+  }
+
+  const locales = (await response.json()) as unknown;
+  if (!Array.isArray(locales)) {
+    throw new Error("TMDB returned an invalid language list.");
+  }
+
+  const displayNames = new Intl.DisplayNames(["en"], { type: "language" });
+  return [...new Set(locales.filter((locale): locale is string =>
+    typeof locale === "string" && /^[a-z]{2,3}-[A-Z]{2}$/i.test(locale),
+  ))]
+    .map((code) => ({ code, name: displayNames.of(code) ?? code }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export async function getLatestMovie(): Promise<Movie | null> {
@@ -259,7 +313,7 @@ export async function getLatestMovie(): Promise<Movie | null> {
   };
 }
 
-export async function getMovie(id: string): Promise<{
+export async function getMovie(id: string, language = "en-US"): Promise<{
   movie: Movie & { overview: string; backdropImage?: string };
   providers: WatchProvider[];
   watchGuideUrl?: string;
@@ -272,16 +326,16 @@ export async function getMovie(id: string): Promise<{
 
   const movieUrl = new URL(`https://api.themoviedb.org/3/movie/${encodeURIComponent(id)}`);
   addTMDBAuth(movieUrl, auth);
-  movieUrl.searchParams.set("language", "en-US");
+  movieUrl.searchParams.set("language", language);
 
   const providerUrl = new URL(`https://api.themoviedb.org/3/movie/${encodeURIComponent(id)}/watch/providers`);
   addTMDBAuth(providerUrl, auth);
   const videosUrl = new URL(`https://api.themoviedb.org/3/movie/${encodeURIComponent(id)}/videos`);
   addTMDBAuth(videosUrl, auth);
-  videosUrl.searchParams.set("language", "en-US");
+  videosUrl.searchParams.set("language", language);
   const creditsUrl = new URL(`https://api.themoviedb.org/3/movie/${encodeURIComponent(id)}/credits`);
   addTMDBAuth(creditsUrl, auth);
-  creditsUrl.searchParams.set("language", "en-US");
+  creditsUrl.searchParams.set("language", language);
   const alternativeTitlesUrl = new URL(
     `https://api.themoviedb.org/3/movie/${encodeURIComponent(id)}/alternative_titles`,
   );
@@ -371,13 +425,13 @@ export async function getMovie(id: string): Promise<{
   };
 }
 
-export async function searchMovies(query: string): Promise<Movie[]> {
+export async function searchMovies(query: string, language = "en-US"): Promise<Movie[]> {
   const auth = getTMDBAuth();
   const url = new URL("https://api.themoviedb.org/3/search/movie");
   addTMDBAuth(url, auth);
   url.searchParams.set("query", query);
   url.searchParams.set("include_adult", "false");
-  url.searchParams.set("language", "en-US");
+  url.searchParams.set("language", language);
   url.searchParams.set("page", "1");
 
   const response = await fetchTMDB(url, { ...auth, next: { revalidate: 300 } });

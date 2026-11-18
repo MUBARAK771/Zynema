@@ -67,7 +67,7 @@ export default function Header() {
   }, []);
 
   return (
-    <header className="flex items-center gap-4 border-b border-[#242529] bg-[#0d0e10] px-6 py-4">
+    <header className="flex items-center gap-2 border-b border-[#242529] bg-[#0d0e10] px-3 py-3 sm:gap-4 sm:px-6 sm:py-4">
       <div ref={containerRef} className="flex-1 max-w-xl relative">
         <Search
           size={16}
@@ -142,7 +142,7 @@ export default function Header() {
         )}
       </div>
 
-      <div className="ml-auto flex items-center gap-5">
+      <div className="ml-auto flex items-center gap-2 sm:gap-5">
         <button className="relative text-zinc-300 hover:text-white">
           <Bell size={20} />
           <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-accent" />

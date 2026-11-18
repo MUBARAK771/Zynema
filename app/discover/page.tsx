@@ -1,23 +1,43 @@
 import { ArrowUpDown, LayoutGrid, List } from "lucide-react";
 import Filters, { ActiveFilterPills } from "../components/Filter";
-import { getMovies, type Movie } from "@/lib/tmdb";
+import { getMovies, getRegionalMovies, type Movie } from "@/lib/tmdb";
 import ShowCard from "../components/ShowCard";
 import Pagination from "../components/Pagination";
+import { getRequestSession } from "@/lib/auth";
 
 export default async function DiscoverPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ page?: string }>;
+  searchParams?: Promise<{
+    page?: string;
+    country?: string;
+    originalLanguage?: string;
+  }>;
 }) {
   const params = (await searchParams) ?? {};
   const requestedPage = Number.parseInt(params.page ?? "1", 10);
   const page = Number.isNaN(requestedPage) ? 1 : Math.min(Math.max(requestedPage, 1), 10);
+  const country = params.country === "NG" || params.country === "IN" ? params.country : undefined;
+  const originalLanguage =
+    country === "IN" && params.originalLanguage === "hi" ? "hi" : undefined;
+  const session = await getRequestSession();
+  const language = session?.user.language ?? "en-US";
+  const title =
+    country === "NG" ? "Nollywood movies" :
+      country === "IN" && originalLanguage === "hi" ? "Bollywood movies" :
+        country === "IN" ? "Indian movies" : "Discover";
+  const query = {
+    ...(country ? { country } : {}),
+    ...(originalLanguage ? { originalLanguage } : {}),
+  };
   let movies: Movie[] = [];
   let totalPages = 1;
   let loadError: string | null = null;
 
   try {
-    const result = await getMovies(page);
+    const result = country
+      ? await getRegionalMovies(country, page, language, originalLanguage)
+      : await getMovies(page, language);
     movies = result.movies;
     totalPages = result.totalPages;
   } catch (error) {
@@ -31,7 +51,7 @@ export default async function DiscoverPage({
       <main className="flex-1 min-w-0 px-4 py-5 lg:px-6">
         <div className="flex items-start justify-between mb-1">
           <div>
-            <h1 className="text-2xl font-bold">Discover</h1>
+            <h1 className="text-2xl font-bold">{title}</h1>
 
             <p className="text-sm text-muted mt-1">
               {loadError ? "Movie discovery is temporarily unavailable" : `Found ${movies.length} movies matching your criteria`}
@@ -76,7 +96,7 @@ export default async function DiscoverPage({
           </div>
         )}
 
-        <Pagination currentPage={page} totalPages={totalPages} />
+        <Pagination currentPage={page} totalPages={totalPages} query={query} />
       </main>
     </div>
   );

@@ -172,3 +172,43 @@ export async function getShows(page = 1): Promise<{ shows: Show[]; totalPages: n
     };
   }
 }
+
+export async function getFeaturedShows(): Promise<Show[]> {
+  const baseUrl = (process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://api.tvmaze.com")
+    .trim()
+    .replace(/\/$/, "");
+
+  try {
+    const response = await fetch(`${baseUrl}/shows?page=0`, {
+      next: { revalidate: 3600 },
+    });
+    if (!response.ok) {
+      throw new Error(`TVMaze returned ${response.status} while loading popular series.`);
+    }
+
+    const results = (await response.json()) as TVMazeResult[];
+    return results.slice(0, 8).map((entry) => {
+      const show = "show" in entry ? entry.show : entry;
+      return {
+        id: String(show.id),
+        title: show.name,
+        genre: show.genres?.join(", ") || "Series",
+        year: show.premiered?.slice(0, 4) || "—",
+        runtime: show.runtime ? `${show.runtime}m` : "—",
+        rating: show.rating?.average ?? 0,
+        posterImage: show.image?.original || show.image?.medium || undefined,
+      };
+    });
+  } catch (error) {
+    console.error("Popular series could not be loaded from TVMaze.", error);
+    return fallbackShows.slice(0, 8).map((show) => ({
+      id: String(show.id),
+      title: show.title,
+      genre: show.genre,
+      year: String(show.year),
+      runtime: show.runtime,
+      rating: show.rating,
+      posterImage: show.posterImage,
+    }));
+  }
+}

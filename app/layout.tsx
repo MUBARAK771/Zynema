@@ -38,10 +38,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
        <AuthGate loginUrl={loginUrl}>
          <div className="flex h-screen overflow-hidden">
            <Sidebar loginUrl={loginUrl} />
-           <div className="flex-1 flex flex-col overflow-hidden">
+           <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
              <Header />
              <DashboardWelcome />
-             <main className="flex-1 overflow-y-auto scrollbar-none">{children}</main>
+             <main className="flex-1 overflow-y-auto pb-20 scrollbar-none md:pb-0">{children}</main>
            </div>
           </div>
        </AuthGate>

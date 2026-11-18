@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { searchMovies } from "@/lib/tmdb";
+import { getRequestSession } from "@/lib/auth";
 
 const defaultBaseUrl = "https://api.tvmaze.com";
 
@@ -13,9 +14,10 @@ export async function GET(request: Request) {
   const baseUrl = (process.env.NEXT_PUBLIC_API_BASE_URL ?? defaultBaseUrl).trim().replace(/\/$/, "");
 
   try {
+    const session = await getRequestSession();
     const [showsResult, moviesResult] = await Promise.allSettled([
       fetch(`${baseUrl}/search/shows?q=${encodeURIComponent(query)}`, { next: { revalidate: 300 } }),
-      searchMovies(query),
+      searchMovies(query, session?.user.language ?? "en-US"),
     ]);
 
     const showsResponse = showsResult.status === "fulfilled" ? showsResult.value : undefined;

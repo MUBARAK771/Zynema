@@ -18,6 +18,7 @@ export async function GET() {
       id: verified.user.id,
       email: verified.user.email ?? null,
       name: verified.user.name ?? null,
+      language: verified.user.language,
     },
   });
 

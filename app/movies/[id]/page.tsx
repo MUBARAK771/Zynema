@@ -5,6 +5,7 @@ import MovieTrailerPlayer from "@/app/components/MovieTrailerPlayer";
 import MovieSources from "@/app/components/MovieSources";
 import WatchNowButton from "@/app/components/WatchNowButton";
 import WatchlistButton from "@/app/components/WatchlistButton";
+import { getRequestSession } from "@/lib/auth";
 
 function formatReleaseDate(value: string | undefined, fallback: string) {
   if (!value) return fallback;
@@ -24,7 +25,8 @@ export default async function MovieDetails({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const result = await getMovie(id);
+  const session = await getRequestSession();
+  const result = await getMovie(id, session?.user.language ?? "en-US");
 
   if (!result) {
     return (

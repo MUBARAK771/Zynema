@@ -103,7 +103,13 @@ export async function verifyDashboardSession(
   session: DashboardSession,
 ): Promise<{
   session: DashboardSession;
-  user: { id: string; email?: string | null; name?: string | null };
+  user: {
+    id: string;
+    email?: string | null;
+    name?: string | null;
+    language: string;
+    metadata: Record<string, unknown>;
+  };
 } | null> {
   const { url, anonKey } = getSupabaseConfig();
   let activeSession = session;
@@ -144,10 +150,15 @@ export async function verifyDashboardSession(
     .find((value): value is string => typeof value === "string" && value.trim().length > 0)
     ?.trim()
     .slice(0, 80) ?? null;
+  const language =
+    typeof metadata.language === "string" &&
+    /^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/i.test(metadata.language)
+      ? metadata.language
+      : "en-US";
 
   return {
     session: activeSession,
-    user: { id: user.id, email: user.email ?? null, name },
+    user: { id: user.id, email: user.email ?? null, name, language, metadata },
   };
 }
 

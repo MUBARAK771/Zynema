@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { ArrowRight, CalendarDays, Clapperboard, Flame, Play, Star } from "lucide-react";
-import { getMovies, type Movie } from "@/lib/tmdb";
+import { getMovies, getRegionalMovies, type Movie } from "@/lib/tmdb";
+import { getFeaturedShows, type Show } from "@/lib/tvmaze";
+import { getRequestSession } from "@/lib/auth";
 
 const genres = ["Action", "Adventure", "Animation", "Comedy", "Crime", "Drama", "Fantasy", "Horror", "Mystery", "Sci-Fi"];
 
@@ -37,12 +39,94 @@ function MoviePoster({ movie, featured = false }: { movie: Movie; featured?: boo
   );
 }
 
+function MovieShelf({
+  title,
+  href,
+  movies,
+}: {
+  title: string;
+  href: string;
+  movies: Movie[];
+}) {
+  if (movies.length === 0) return null;
+
+  return (
+    <section className="mt-10" aria-label={title}>
+      <div className="mb-4 flex items-end justify-between border-b border-[#25262a] pb-3">
+        <h2 className="text-lg font-bold sm:text-xl">{title}</h2>
+        <Link href={href} className="inline-flex items-center gap-1 text-xs text-zinc-400 hover:text-white">
+          Browse all <ArrowRight size={13} />
+        </Link>
+      </div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+        {movies.slice(0, 12).map((movie) => <MoviePoster key={movie.id} movie={movie} />)}
+      </div>
+    </section>
+  );
+}
+
+function SeriesShelf({ shows }: { shows: Show[] }) {
+  if (shows.length === 0) return null;
+
+  return (
+    <section className="mt-10" aria-label="Popular series">
+      <div className="mb-4 flex items-end justify-between border-b border-[#25262a] pb-3">
+        <div>
+          <h2 className="text-lg font-bold sm:text-xl">Popular series</h2>
+          <p className="mt-1 text-xs text-zinc-500">TVMaze series catalog</p>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+        {shows.map((show) => (
+          <Link
+            key={show.id}
+            href={`/shows/${show.id}`}
+            className="group min-w-0 overflow-hidden border border-[#28292d] bg-[#111214] hover:border-[#ff4b2b]/70"
+          >
+            <div className="aspect-2/3 overflow-hidden bg-[#202124]">
+              {show.posterImage ? (
+                <img
+                  src={show.posterImage}
+                  alt={`${show.title} poster`}
+                  className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.035]"
+                />
+              ) : null}
+            </div>
+            <div className="p-3">
+              <h3 className="truncate text-sm font-semibold text-zinc-100">{show.title}</h3>
+              <p className="mt-2 truncate text-xs text-zinc-500">{show.year} · {show.genre || "Series"}</p>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export default async function Home() {
+  const session = await getRequestSession();
+  const language = session?.user.language ?? "en-US";
+  const [popularResult, nollywoodResult, bollywoodResult, seriesResult] = await Promise.allSettled([
+    getMovies(1, language),
+    getRegionalMovies("NG", 1, language),
+    getRegionalMovies("IN", 1, language, "hi"),
+    getFeaturedShows(),
+  ]);
+
   let movies: Movie[] = [];
-  try {
-    ({ movies } = await getMovies(1));
-  } catch {
-    movies = [];
+  if (popularResult.status === "fulfilled") movies = popularResult.value.movies;
+  else console.error("Popular movies could not be loaded.", popularResult.reason);
+  const nollywood = nollywoodResult.status === "fulfilled" ? nollywoodResult.value.movies : [];
+  if (nollywoodResult.status === "rejected") {
+    console.error("Nollywood movies could not be loaded.", nollywoodResult.reason);
+  }
+  const bollywood = bollywoodResult.status === "fulfilled" ? bollywoodResult.value.movies : [];
+  if (bollywoodResult.status === "rejected") {
+    console.error("Bollywood movies could not be loaded.", bollywoodResult.reason);
+  }
+  const series = seriesResult.status === "fulfilled" ? seriesResult.value : [];
+  if (seriesResult.status === "rejected") {
+    console.error("Popular series could not be loaded.", seriesResult.reason);
   }
 
   const featured = movies[0];
@@ -92,6 +176,21 @@ export default async function Home() {
               {movies.map((movie) => <MoviePoster key={movie.id} movie={movie} />)}
             </div>
           )}
+        </section>
+
+        <MovieShelf title="Nollywood movies" href="/discover?country=NG" movies={nollywood} />
+        <MovieShelf
+          title="Bollywood movies"
+          href="/discover?country=IN&originalLanguage=hi"
+          movies={bollywood}
+        />
+        <SeriesShelf shows={series} />
+
+        <section className="mt-10 rounded-xl border border-[#292a2e] bg-[#111214] p-5 sm:p-6">
+          <h2 className="text-sm font-bold text-white">More collections are coming</h2>
+          <p className="mt-2 text-xs leading-5 text-zinc-500">
+            We’re growing Zynema’s regional movie and series catalog. Listings depend on TMDB coverage.
+          </p>
         </section>
 
         <section className="mt-10 flex items-center justify-between gap-4 border-y border-[#292a2e] py-5">

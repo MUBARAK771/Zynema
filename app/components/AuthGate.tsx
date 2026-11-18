@@ -6,12 +6,18 @@ export type DashboardUser = {
   id: string;
   email: string | null;
   name: string | null;
+  language: string;
 };
 
 const DashboardUserContext = createContext<DashboardUser | null>(null);
+const UpdateDashboardUserContext = createContext<(user: DashboardUser) => void>(() => {});
 
 export function useDashboardUser() {
   return useContext(DashboardUserContext);
+}
+
+export function useUpdateDashboardUser() {
+  return useContext(UpdateDashboardUserContext);
 }
 
 export default function AuthGate({
@@ -112,7 +118,9 @@ export default function AuthGate({
 
   return (
     <DashboardUserContext.Provider value={user}>
-      {children}
+      <UpdateDashboardUserContext.Provider value={setUser}>
+        {children}
+      </UpdateDashboardUserContext.Provider>
     </DashboardUserContext.Provider>
   );
 }
