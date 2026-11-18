@@ -158,7 +158,7 @@ export default function Header() {
           <span className="hidden max-w-36 truncate text-xs font-medium text-zinc-200 sm:inline">
             {displayName}
           </span>
-          <ChevronDown size={16} className="text-muted" />
+          {/* <ChevronDown size={16} className="text-muted" /> */}
         </div>
       </div>
     </header>
