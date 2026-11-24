@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import {
   DASHBOARD_SESSION_COOKIE,
   deserializeSessionCookie,
+  getLoginUrl,
   serializeSessionCookie,
   verifyDashboardSession,
 } from "@/lib/auth";
@@ -22,7 +23,7 @@ export async function proxy(request: NextRequest) {
   const session = deserializeSessionCookie(sessionCookie);
 
   if (!session) {
-    const loginUrl = new URL(process.env.LOGIN_URL ?? "https://www.zynema-app.online/");
+    const loginUrl = new URL(getLoginUrl());
     loginUrl.searchParams.set("next", `${origin}${pathname}${search}`);
     const response = NextResponse.redirect(loginUrl);
     response.cookies.delete(DASHBOARD_SESSION_COOKIE);
@@ -31,7 +32,7 @@ export async function proxy(request: NextRequest) {
 
   const verified = await verifyDashboardSession(session);
   if (!verified) {
-    const loginUrl = new URL(process.env.LOGIN_URL ?? "https://www.zynema-app.online/");
+    const loginUrl = new URL(getLoginUrl());
     loginUrl.searchParams.set("next", `${origin}${pathname}${search}`);
     const response = NextResponse.redirect(loginUrl);
     response.cookies.delete(DASHBOARD_SESSION_COOKIE);

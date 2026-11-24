@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
   DASHBOARD_SESSION_COOKIE,
   getSupabaseConfig,
+  getLoginUrl,
   isSafeDashboardPath,
   serializeSessionCookie,
 } from "@/lib/auth";
@@ -22,7 +23,7 @@ export async function POST(request: Request) {
   }
 
   const requestOrigin = request.headers.get("origin");
-  const expectedOrigin = new URL(process.env.LOGIN_URL ?? "https://www.zynema-app.online").origin;
+  const expectedOrigin = new URL(getLoginUrl()).origin;
 
   let actualOrigin: string;
   try {

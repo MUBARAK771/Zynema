@@ -10,6 +10,14 @@ export type DashboardSession = {
 
 export const DASHBOARD_SESSION_COOKIE = "sb_dashboard_session";
 
+export function getLoginUrl(): string {
+  return (
+    process.env.LOGIN_URL ??
+    process.env.NEXT_PUBLIC_LOGIN_URL ??
+    "https://zynema-app.online/login.html"
+  );
+}
+
 function requireEnv(name: string, value: string | undefined): string {
   if (!value) {
     throw new Error(`Missing required environment variable: ${name}`);

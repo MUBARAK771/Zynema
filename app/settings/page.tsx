@@ -1,6 +1,7 @@
 import SettingsClient from "@/app/components/SettingsClient";
+import { getLoginUrl } from "@/lib/auth";
 
 export default function SettingsPage() {
-  const loginUrl = process.env.LOGIN_URL ?? "https://www.zynema-app.online";
+  const loginUrl = getLoginUrl();
   return <SettingsClient loginUrl={loginUrl} />;
 }

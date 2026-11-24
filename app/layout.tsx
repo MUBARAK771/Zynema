@@ -5,6 +5,7 @@ import Header from "./components/Header";
 import Sidebar from "./components/sidebar";
 import AuthGate from "./components/AuthGate";
 import DashboardWelcome from "./components/DashboardWelcome";
+import { getLoginUrl } from "@/lib/auth";
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -27,7 +28,7 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
-  const loginUrl = process.env.LOGIN_URL ?? "https://www.zynema-app.online";
+  const loginUrl = getLoginUrl();
 
   return (
     <html

@@ -34,7 +34,7 @@ Movies and TV shows can be added to My List from their detail pages. Items are s
 
 ## Supabase dashboard authentication
 
-Set `NEXT_SUPABASE_URL`, `NEXT_SUPABASE_ANON_KEY`, and the server-only `LOGIN_URL` in the dashboard deployment. `LOGIN_URL` must be the exact origin of the HTML login site (for example, `https://www.zynema-app.online`). Use the Supabase anon/publishable key, never a service-role key.
+Set `NEXT_SUPABASE_URL`, `NEXT_SUPABASE_ANON_KEY`, and the server-only `LOGIN_URL` in the dashboard deployment. Set `LOGIN_URL` to the login page URL, for example `https://zynema-app.online/login.html`; the handoff validates the URL's origin. Existing deployments using `NEXT_PUBLIC_LOGIN_URL` are supported as a fallback, but prefer `LOGIN_URL`. Use the Supabase anon/publishable key, never a service-role key.
 
 After login, the HTML app submits a top-level HTTPS form POST to `https://zynema-snowy.vercel.app/api/auth/handoff`. The dashboard validates the submitted Supabase access token with Supabase Auth, compares the returned user ID, then sets a Secure, HttpOnly cookie on the dashboard origin and redirects to a safe dashboard path. The access and refresh tokens are in the POST body, never in a URL. The dashboard refreshes the session server-side and saves rotated tokens back to the cookie.
 
