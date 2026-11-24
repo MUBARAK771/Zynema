@@ -102,7 +102,7 @@ export default function Header() {
                     onClick={() => {
                       setOpen(false);
                       setQuery(movie.title);
-                      router.push(`/movies/${movie.id}`);
+                      router.push(`/movies/${movie.id}?playTrailer=1`);
                     }}
                     className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-white/5"
                   >

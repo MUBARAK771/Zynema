@@ -19,10 +19,14 @@ function formatReleaseDate(value: string | undefined, fallback: string) {
 
 export default async function MovieDetails({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams?: Promise<{ playTrailer?: string | string[] }>;
 }) {
   const { id } = await params;
+  const { playTrailer } = (await searchParams) ?? {};
+  const autoPlayTrailer = playTrailer === "1";
   const session = await getRequestSession();
   const result = await getMovie(id, session?.user.language ?? "en-US");
 
@@ -106,10 +110,18 @@ export default async function MovieDetails({
                 This is a trailer, not the full movie.
               </p>
               <div className="mt-5 overflow-hidden rounded-lg border border-[#2b2d31] bg-black">
-                <MovieTrailerPlayer videoKey={trailer.key} title={movie.title} />
+                <MovieTrailerPlayer
+                  videoKey={trailer.key}
+                  title={movie.title}
+                  autoPlay={autoPlayTrailer}
+                />
                 <p className="p-3 text-xs text-zinc-500">{trailer.name} · Official trailer on YouTube</p>
               </div>
             </div>
+          ) : autoPlayTrailer ? (
+            <p role="status" className="rounded-lg border border-[#2b2d31] bg-[#17191c] p-4 text-sm text-zinc-400">
+              No official trailer is available for this movie.
+            </p>
           ) : null}
 
           {cast.length > 0 || crew.length > 0 ? (
