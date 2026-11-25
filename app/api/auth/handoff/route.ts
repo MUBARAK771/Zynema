@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import {
   DASHBOARD_SESSION_COOKIE,
+  getApprovedLoginOrigins,
   getSupabaseConfig,
-  getLoginUrl,
   isSafeDashboardPath,
   serializeSessionCookie,
 } from "@/lib/auth";
@@ -23,7 +23,6 @@ export async function POST(request: Request) {
   }
 
   const requestOrigin = request.headers.get("origin");
-  const expectedOrigin = new URL(getLoginUrl()).origin;
 
   let actualOrigin: string;
   try {
@@ -32,7 +31,7 @@ export async function POST(request: Request) {
     actualOrigin = "";
   }
 
-  if (!actualOrigin || actualOrigin !== expectedOrigin) {
+  if (!actualOrigin || !getApprovedLoginOrigins().includes(actualOrigin)) {
     return handoffError("This sign-in request did not come from the approved Zynema login site.", 403);
   }
 

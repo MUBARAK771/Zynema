@@ -18,6 +18,27 @@ export function getLoginUrl(): string {
   );
 }
 
+export function getApprovedLoginOrigins(): string[] {
+  const origins = new Set([
+    "https://zynema-app.online",
+    "https://www.zynema-app.online",
+  ]);
+
+  for (const loginUrl of [
+    process.env.LOGIN_URL,
+    process.env.NEXT_PUBLIC_LOGIN_URL,
+  ]) {
+    if (!loginUrl) continue;
+    try {
+      origins.add(new URL(loginUrl).origin);
+    } catch {
+      // Ignore invalid optional configuration.
+    }
+  }
+
+  return [...origins];
+}
+
 function requireEnv(name: string, value: string | undefined): string {
   if (!value) {
     throw new Error(`Missing required environment variable: ${name}`);
