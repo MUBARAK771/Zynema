@@ -1,6 +1,6 @@
 "use client"
 import { useState, useRef, useEffect } from "react";
-import { Search, Bell, ChevronDown } from "lucide-react";
+import { Search, Bell, UserRound } from "lucide-react";
 import { useDebouncedCallback } from "use-debounce";
 import { useRouter } from "next/navigation";
 import type { Movie } from "@/lib/tmdb";
@@ -17,13 +17,14 @@ interface TVMazeShow {
 type SearchResults = {
   shows: TVMazeShow[];
   movies: Movie[];
+  creators: { user_id: string; display_name: string }[];
 };
 
 export default function Header() {
   const router = useRouter();
   const user = useDashboardUser();
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<SearchResults>({ shows: [], movies: [] });
+  const [results, setResults] = useState<SearchResults>({ shows: [], movies: [], creators: [] });
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -35,7 +36,7 @@ export default function Header() {
 
   const handleSearch = useDebouncedCallback(async (term: string) => {
     if (!term) {
-      setResults({ shows: [], movies: [] });
+      setResults({ shows: [], movies: [], creators: [] });
       setOpen(false);
       return;
     }
@@ -80,8 +81,11 @@ export default function Header() {
             setQuery(e.target.value);
             handleSearch(e.target.value);
           }}
-          onFocus={() => (results.shows.length > 0 || results.movies.length > 0) && setOpen(true)}
-          placeholder="Search movies, shows, episodes, or actors..."
+          onFocus={() =>
+            (results.shows.length > 0 || results.movies.length > 0 || results.creators.length > 0) &&
+            setOpen(true)
+          }
+          placeholder="Search movies, shows, or creators..."
           className="w-full bg-base-panel border border-[#242529] rounded-full pl-10 pr-4 py-2.5 text-sm text-zinc-200 placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-accent"
         />
 
@@ -90,7 +94,7 @@ export default function Header() {
             {loading && (
               <p className="px-4 py-3 text-sm text-zinc-200">Searching...</p>
             )}
-            {!loading && results.shows.length === 0 && results.movies.length === 0 && (
+            {!loading && results.shows.length === 0 && results.movies.length === 0 && results.creators.length === 0 && (
               <p className="px-4 py-3 text-sm text-zinc-200">No results found.</p>
             )}
             {!loading && results.movies.length > 0 ? (
@@ -138,6 +142,27 @@ export default function Header() {
                 ))}
               </>
             ) : null}
+            {!loading && results.creators.length > 0 ? (
+              <>
+                <p className="px-4 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Creators</p>
+                {results.creators.map((creator) => (
+                  <button
+                    key={creator.user_id}
+                    onClick={() => {
+                      setOpen(false);
+                      setQuery(creator.display_name);
+                      router.push(`/creators/${creator.user_id}`);
+                    }}
+                    className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-white/5"
+                  >
+                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#ff3d00]/15 text-[#ff765c]">
+                      <UserRound size={17} />
+                    </span>
+                    <span className="truncate text-sm text-zinc-200">{creator.display_name}</span>
+                  </button>
+                ))}
+              </>
+            ) : null}
           </div>
         )}
       </div>
@@ -158,7 +183,6 @@ export default function Header() {
           <span className="hidden max-w-36 truncate text-xs font-medium text-zinc-200 sm:inline">
             {displayName}
           </span>
-          {/* <ChevronDown size={16} className="text-muted" /> */}
         </div>
       </div>
     </header>

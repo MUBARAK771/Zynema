@@ -40,6 +40,10 @@ After login, the HTML app submits a top-level HTTPS form POST to `https://zynema
 
 The HTML app should submit `access_token`, `refresh_token`, `expires_at`, `user_id`, and a same-origin dashboard path in that form. Its browser request must include the login site's `Origin` header; the dashboard rejects other origins. The login page and the dashboard must both be served over HTTPS in production.
 
+## Creator uploads and search
+
+Apply `supabase/migrations/20261126120000_create_creator_content.sql` in the Supabase SQL Editor to create the opt-in creator directory, public video metadata, upload bucket, and row-level access policies. Users can upload MP4, WebM, or QuickTime files up to 100 MB from **Upload**. Video files are sent directly to Supabase Storage with a short-lived signed upload URL; the application server does not proxy the video bytes. Uploaded videos are public. Users only appear in creator search after enabling **Show my creator profile in search** in Settings. Email addresses are not included in public profile results.
+
 The watchlist API uses the user's verified access token and never a service-role key. `watchlist_items` policies require `auth.uid() = user_id` for reads and writes, so a client-supplied user ID cannot access another user's items.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.

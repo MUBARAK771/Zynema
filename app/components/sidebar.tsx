@@ -10,6 +10,7 @@ import {
   Settings,
   HelpCircle,
   LogOut,
+  Upload,
 } from "lucide-react";
 
 const nav = [
@@ -17,6 +18,7 @@ const nav = [
   { href: "/discover", label: "Discover", icon: Compass },
   { href: "/schedule", label: "TV Schedule", icon: CalendarDays },
   { href: "/my-list", label: "My List", icon: Bookmark },
+  { href: "/upload", label: "Upload", icon: Upload },
 ];
 const mobileNav = [
   ...nav,
@@ -109,7 +111,7 @@ export default function Sidebar({ loginUrl }: { loginUrl: string }) {
 
       <nav
         aria-label="Mobile navigation"
-        className="mobile-bottom-nav fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-[#2b2d31] bg-[#15171a]/95 shadow-[0_-8px_24px_rgba(0,0,0,0.3)] backdrop-blur md:hidden"
+        className="mobile-bottom-nav fixed inset-x-0 bottom-0 z-40 grid grid-cols-6 border-t border-[#2b2d31] bg-[#15171a]/95 shadow-[0_-8px_24px_rgba(0,0,0,0.3)] backdrop-blur md:hidden"
       >
         {mobileNav.map(({ href, label, icon: Icon }) => {
           const active = href === "/" ? pathname === "/" : pathname === href;

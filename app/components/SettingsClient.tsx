@@ -14,6 +14,8 @@ export default function SettingsClient({ loginUrl }: { loginUrl: string }) {
     { code: "en-US", name: "English (United States)" },
   ]);
   const [loadingLanguages, setLoadingLanguages] = useState(true);
+  const [searchable, setSearchable] = useState(false);
+  const [loadingProfile, setLoadingProfile] = useState(true);
   const [saving, setSaving] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,6 +48,36 @@ export default function SettingsClient({ loginUrl }: { loginUrl: string }) {
     };
   }, []);
 
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      try {
+        const response = await fetch("/api/auth/profile", {
+          cache: "no-store",
+          credentials: "same-origin",
+        });
+        const result = (await response.json()) as {
+          profile?: { searchable?: boolean };
+          error?: string;
+        };
+        if (!response.ok || typeof result.profile?.searchable !== "boolean") {
+          throw new Error(result.error || "Your creator profile could not be loaded.");
+        }
+        if (active) setSearchable(result.profile.searchable);
+      } catch (cause) {
+        if (active) {
+          setError(cause instanceof Error ? cause.message : "Your creator profile could not be loaded.");
+        }
+      } finally {
+        if (active) setLoadingProfile(false);
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   async function saveProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSaving(true);
@@ -57,7 +89,7 @@ export default function SettingsClient({ loginUrl }: { loginUrl: string }) {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "same-origin",
-        body: JSON.stringify({ name, language }),
+        body: JSON.stringify({ name, language, searchable }),
       });
       const result = (await response.json()) as {
         user?: typeof user;
@@ -70,7 +102,7 @@ export default function SettingsClient({ loginUrl }: { loginUrl: string }) {
       updateDashboardUser(result.user);
       setName(result.user.name ?? "");
       setLanguage(result.user.language);
-      setMessage("Your profile and content language have been saved.");
+      setMessage("Your profile, creator visibility, and content language have been saved.");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Your profile could not be saved.");
     } finally {
@@ -140,6 +172,25 @@ export default function SettingsClient({ loginUrl }: { loginUrl: string }) {
               />
             </label>
           </div>
+          <label className="mt-5 flex items-start gap-3 text-sm text-zinc-300">
+            <input
+              type="checkbox"
+              checked={searchable}
+              onChange={(event) => setSearchable(event.target.checked)}
+              disabled={loadingProfile}
+              className="mt-1 accent-[#ff3d00]"
+            />
+            <span>
+              <span className="block font-medium text-white">Show my creator profile in search</span>
+              <span className="mt-1 block text-xs leading-5 text-zinc-500">
+                If enabled, your display name and published videos can be found by other signed-in users.
+                Your email address is never shown.
+              </span>
+            </span>
+          </label>
+          {loadingProfile ? (
+            <p role="status" className="mt-3 text-xs text-zinc-500">Loading creator profile…</p>
+          ) : null}
         </section>
 
         <section className="rounded-2xl border border-[#242529] bg-base-panel p-4 sm:p-6">
@@ -192,7 +243,7 @@ export default function SettingsClient({ loginUrl }: { loginUrl: string }) {
           </button>
           <button
             type="submit"
-            disabled={saving || loadingLanguages || languages.length === 0}
+            disabled={saving || loadingLanguages || loadingProfile || languages.length === 0}
             className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#f04427] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#ff6040] disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Save size={16} />
